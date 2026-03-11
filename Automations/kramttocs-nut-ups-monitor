@@ -1,0 +1,479 @@
+blueprint:
+  name: UPS Monitor via NUT (Multi-Target Smart Notifications)
+  description: >
+    Monitors a UPS exposed via the NUT integration and sends debounced notifications when:
+    - Status code changes (status_data)
+    - Battery charge drops by a configured step (e.g., every 10%)
+    - Self-test result indicates a known failure/warning state (optional)
+    - UPS load stays above a configured threshold for a configured period (optional)
+
+    This version suppresses common noisy alerts caused by temporary unavailable/unknown states
+    and supports multiple mobile_app notify targets with Normal, Android High,
+    iOS Time Sensitive, or Cross-Platform High notification modes.
+
+    Enter one or more mobile_app notify service names, for example:
+    - notify.mobile_app_pixel_9_pro
+    - notify.mobile_app_scotts_iphone
+
+  domain: automation
+
+  input:
+    battery_charge_section:
+      name: Battery Charge
+      icon: mdi:battery-charging-high
+      collapsed: false
+      input:
+        battery_charge:
+          name: Battery Charge Sensor
+          description: Sensor showing UPS battery charge percentage.
+          selector:
+            entity:
+              domain: sensor
+              integration: nut
+
+        report_interval:
+          name: Battery Drop Notification Interval
+          description: Notify when battery charge drops by this percentage step.
+          default: 10
+          selector:
+            number:
+              min: 1
+              max: 50
+              step: 1
+              mode: slider
+
+        battery_delay_seconds:
+          name: Debounce for battery charge notifications (seconds)
+          description: >
+            Optional additional delay before sending a battery charge step notification.
+            Default 0 (no delay). Increase if your battery charge sensor jumps around.
+          default: 0
+          selector:
+            number:
+              min: 0
+              max: 600
+              step: 1
+              unit_of_measurement: s
+              mode: slider
+
+    battery_voltage_section:
+      name: Battery Voltage
+      icon: mdi:sine-wave
+      collapsed: false
+      input:
+        battery_voltage:
+          name: Battery Voltage Sensor
+          description: Sensor showing UPS battery voltage.
+          selector:
+            entity:
+              domain: sensor
+              integration: nut
+
+    battery_status_section:
+      name: Battery Status
+      icon: mdi:transit-connection-variant
+      collapsed: false
+      input:
+        ups_status_data:
+          name: UPS Status Code Sensor (e.g., OL, OB)
+          description: >
+            Sensor with compact status codes like OL (online), OB (on battery), LB (low battery).
+            Used for automation logic.
+          selector:
+            entity:
+              domain: sensor
+              integration: nut
+
+        ups_status:
+          name: UPS Human-Readable Status Sensor
+          description: >
+            Sensor with full text status like "Online", "On Battery".
+            Used for notifications.
+          selector:
+            entity:
+              domain: sensor
+              integration: nut
+
+        delay_seconds:
+          name: Debounce for status/self-test notifications (seconds)
+          description: >
+            Require the new status/self-test value to stay stable for this many seconds before notifying.
+          default: 30
+          selector:
+            number:
+              min: 0
+              max: 600
+              step: 1
+              unit_of_measurement: s
+              mode: slider
+
+        enable_ignore_unavailable_status:
+          name: Ignore status changes involving unavailable/unknown?
+          description: >
+            Suppress status alerts when the state changes from or to unavailable/unknown.
+            Helps avoid false alerts during brief Wi-Fi/NUT flaps.
+          default: true
+          selector:
+            boolean:
+
+        notify_online_status:
+          name: Notify when UPS returns to Online?
+          description: >
+            If disabled, "Online" notifications are suppressed completely.
+            Recommended if brief flaps are noisy.
+          default: false
+          selector:
+            boolean:
+
+        suppress_online_after_reconnect:
+          name: Suppress Online after reconnect?
+          description: >
+            Even if Online notifications are enabled, do not notify when Online follows
+            an unavailable/unknown state.
+          default: true
+          selector:
+            boolean:
+
+    battery_self_test_section:
+      name: Battery Self-Test
+      icon: mdi:test-tube
+      collapsed: true
+      input:
+        enable_self_test_check:
+          name: Enable self-test monitoring?
+          default: false
+          selector:
+            boolean:
+
+        self_test_result_entity:
+          name: Self-test Result Sensor (Optional)
+          description: Optional self-test result sensor.
+          default: []
+          selector:
+            entity:
+              domain: sensor
+              integration: nut
+              multiple: false
+
+        ignore_unknown_self_test:
+          name: Ignore unknown/unavailable self-test values?
+          description: >
+            Suppress common noisy self-test alerts caused by reconnects.
+          default: true
+          selector:
+            boolean:
+
+    battery_load_section:
+      name: Battery Load
+      icon: mdi:battery-clock
+      collapsed: true
+      input:
+        enable_load_check:
+          name: Enable UPS load monitoring?
+          default: false
+          selector:
+            boolean:
+
+        load_sensor:
+          name: UPS Load Sensor (Optional)
+          description: Select the UPS load sensor (percentage).
+          default: []
+          selector:
+            entity:
+              domain: sensor
+              integration: nut
+              multiple: false
+
+        load_threshold:
+          name: Load Threshold (%)
+          description: Notify when UPS load is above this percentage for the debounce period.
+          default: 50
+          selector:
+            number:
+              min: 1
+              max: 100
+              step: 1
+              unit_of_measurement: "%"
+              mode: slider
+
+        load_debounce_seconds:
+          name: Debounce for load notifications (seconds)
+          description: Load must stay above the threshold for this long before notifying.
+          default: 10
+          selector:
+            number:
+              min: 0
+              max: 600
+              step: 1
+              unit_of_measurement: s
+              mode: slider
+
+    notification_section:
+      name: Mobile App Notifications
+      icon: mdi:message-badge-outline
+      collapsed: false
+      input:
+        notify_targets:
+          name: Notification targets
+          description: >
+            Enter one or more mobile_app notify service names.
+            Example:
+            notify.mobile_app_pixel_9_pro, notify.mobile_app_scotts_iphone
+          default: notify.mobile_app_my_phone
+          selector:
+            text:
+
+        notification_priority:
+          name: Notification Priority Mode
+          description: >
+            Choose how notifications should be sent:
+            - Normal: standard notification
+            - Android High: priority=high and ttl=0
+            - iOS Time Sensitive: interruption-level=time-sensitive
+            - Cross-Platform High: includes both Android High and iOS Time Sensitive payloads
+          default: cross_platform_high
+          selector:
+            select:
+              options:
+                - label: Normal
+                  value: normal
+                - label: Android High Priority
+                  value: android_high
+                - label: iOS Time Sensitive
+                  value: ios_time_sensitive
+                - label: Cross-Platform High
+                  value: cross_platform_high
+
+        message_prefix:
+          name: Notification Message Prefix
+          description: Prepended to all messages.
+          default: "UPS Monitor:"
+          selector:
+            text:
+
+trigger:
+  - id: status_change
+    trigger: state
+    entity_id: !input ups_status_data
+    for:
+      seconds: !input delay_seconds
+
+  - id: battery_change
+    trigger: state
+    entity_id: !input battery_charge
+
+  - id: self_test_change
+    trigger: state
+    entity_id: !input self_test_result_entity
+    for:
+      seconds: !input delay_seconds
+
+  - id: load_high
+    trigger: numeric_state
+    entity_id: !input load_sensor
+    above: !input load_threshold
+    for:
+      seconds: !input load_debounce_seconds
+
+variables:
+  battery_charge_entity: !input battery_charge
+  battery_voltage_entity: !input battery_voltage
+  ups_status_data_entity: !input ups_status_data
+  ups_status_readable_entity: !input ups_status
+
+  enable_ignore_unavailable_status: !input enable_ignore_unavailable_status
+  notify_online_status: !input notify_online_status
+  suppress_online_after_reconnect: !input suppress_online_after_reconnect
+
+  enable_self_test_check: !input enable_self_test_check
+  self_test_list: !input self_test_result_entity
+  self_test_entity: "{{ (self_test_list | first) if (self_test_list | length > 0) else '' }}"
+  ignore_unknown_self_test: !input ignore_unknown_self_test
+
+  report_interval: !input report_interval
+  battery_delay_seconds: !input battery_delay_seconds
+
+  enable_load_check: !input enable_load_check
+  load_list: !input load_sensor
+  load_entity: "{{ (load_list | first) if (load_list | length > 0) else '' }}"
+  load_threshold: !input load_threshold
+
+  notify_targets_raw: !input notify_targets
+  notify_targets: >
+    {{
+      notify_targets_raw
+      .split(',')
+      | map('trim')
+      | reject('equalto', '')
+      | list
+    }}
+  notification_priority: !input notification_priority
+  message_prefix: !input message_prefix
+
+  current_charge: "{{ states(battery_charge_entity) | int(default=100) }}"
+  charge_mod: "{{ current_charge % report_interval }}"
+  battery_voltage_val: "{{ states(battery_voltage_entity) | float(default=0) }}"
+  status_readable: "{{ states(ups_status_readable_entity) }}"
+  status_code: "{{ states(ups_status_data_entity) }}"
+  status_from: "{{ trigger.from_state.state if trigger.from_state is not none else '' }}"
+  status_to: "{{ trigger.to_state.state if trigger.to_state is not none else '' }}"
+  status_from_bad: "{{ status_from in ['unknown', 'unavailable', 'none', 'None', ''] }}"
+  status_to_bad: "{{ status_to in ['unknown', 'unavailable', 'none', 'None', ''] }}"
+  status_is_online: "{{ status_readable | lower == 'online' or status_code == 'OL' }}"
+
+  test_result: "{{ states(self_test_entity) if self_test_entity != '' else '' }}"
+  test_result_lc: "{{ test_result | lower }}"
+  self_test_bad_value: >
+    {{
+      test_result_lc in [
+        'aborted',
+        'failed',
+        'done and error',
+        'error',
+        'warning',
+        'in progress'
+      ]
+    }}
+  self_test_unknown_value: >
+    {{
+      test_result_lc in [
+        'unknown',
+        'unavailable',
+        'none',
+        ''
+      ]
+    }}
+
+  current_load: "{{ states(load_entity) | float(default=0) if load_entity != '' else 0 }}"
+
+condition:
+  - condition: or
+    conditions:
+      - condition: template
+        value_template: >
+          {{
+            trigger.id == 'status_change'
+            and (
+              not enable_ignore_unavailable_status
+              or (
+                not status_from_bad
+                and not status_to_bad
+              )
+            )
+            and (
+              notify_online_status
+              or not status_is_online
+            )
+            and (
+              not (
+                suppress_online_after_reconnect
+                and status_is_online
+                and status_from_bad
+              )
+            )
+          }}
+
+      - condition: template
+        value_template: >
+          {{
+            trigger.id == 'battery_change'
+            and current_charge < 100
+            and charge_mod == 0
+          }}
+
+      - condition: template
+        value_template: >
+          {{
+            trigger.id == 'self_test_change'
+            and enable_self_test_check
+            and self_test_entity != ''
+            and (
+              self_test_bad_value
+              or (
+                not ignore_unknown_self_test
+                and test_result != 'Done and passed'
+              )
+            )
+            and not (
+              ignore_unknown_self_test
+              and self_test_unknown_value
+            )
+          }}
+
+      - condition: template
+        value_template: >
+          {{
+            trigger.id == 'load_high'
+            and enable_load_check
+            and load_entity != ''
+          }}
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.id == 'battery_change' and (battery_delay_seconds | int) > 0 }}"
+        sequence:
+          - delay:
+              seconds: !input battery_delay_seconds
+
+  - variables:
+      notify_message: >
+        {% if trigger.id == 'status_change' %}
+          {{ message_prefix }} UPS status changed to: {{ status_readable }}
+        {% elif trigger.id == 'battery_change' %}
+          {{ message_prefix }} Battery at {{ current_charge }}%. Voltage: {{ battery_voltage_val }} V
+        {% elif trigger.id == 'self_test_change' %}
+          {{ message_prefix }} Self-test result: {{ test_result }}
+        {% elif trigger.id == 'load_high' %}
+          {{ message_prefix }} UPS load high: {{ current_load }}% (threshold: {{ load_threshold }}%)
+        {% else %}
+          {{ message_prefix }} UPS alert triggered.
+        {% endif %}
+
+  - repeat:
+      for_each: "{{ notify_targets }}"
+      sequence:
+        - choose:
+            - conditions:
+                - condition: template
+                  value_template: "{{ notification_priority == 'android_high' }}"
+              sequence:
+                - action: "{{ repeat.item }}"
+                  data:
+                    message: "{{ notify_message }}"
+                    data:
+                      priority: high
+                      ttl: 0
+
+            - conditions:
+                - condition: template
+                  value_template: "{{ notification_priority == 'ios_time_sensitive' }}"
+              sequence:
+                - action: "{{ repeat.item }}"
+                  data:
+                    message: "{{ notify_message }}"
+                    data:
+                      push:
+                        interruption-level: time-sensitive
+
+            - conditions:
+                - condition: template
+                  value_template: "{{ notification_priority == 'cross_platform_high' }}"
+              sequence:
+                - action: "{{ repeat.item }}"
+                  data:
+                    message: "{{ notify_message }}"
+                    data:
+                      priority: high
+                      ttl: 0
+                      push:
+                        interruption-level: time-sensitive
+
+          default:
+            - action: "{{ repeat.item }}"
+              data:
+                message: "{{ notify_message }}"
+
+mode: queued
+max: 10
