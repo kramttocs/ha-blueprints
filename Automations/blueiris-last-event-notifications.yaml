@@ -1,0 +1,393 @@
+blueprint:
+  name: Blue Iris - Last Event Notifications
+  description: >
+    Sends notifications for Blue Iris last event sensors using a single automation.
+
+    Features:
+    - Supports multiple Blue Iris *_last_event sensors
+    - Automatically derives the matching camera entity
+    - Includes the camera name in the notification
+    - Only sends alerts when the selected alarm panel is armed
+    - Lets you choose which event types should notify
+    - Lets you suppress specific cameras for specific alarm states
+    - Uses the latest Blue Iris snapshot image for the triggered camera
+    - Optional dynamic dashboard navigation per camera
+    - Supports a configurable mute helper and mute duration
+
+    Naming assumptions:
+    - Sensor entity: sensor.<camera_object_id>_last_event
+    - Camera entity: camera.<camera_object_id>
+
+  domain: automation
+  source_url: https://github.com/kramttocs/ha-blueprints/blob/main/Automations/blueiris-last-event-notifications.yaml
+
+  input:
+    camera_section:
+      name: Cameras and Events
+      icon: mdi:cctv
+      collapsed: false
+      input:
+        last_event_sensors:
+          name: Last Event Sensors
+          description: >
+            Select one or more Blue Iris last event sensors.
+            These are typically named like sensor.<camera_name>_last_event.
+          selector:
+            entity:
+              multiple: true
+              filter:
+                integration: blueiris
+                domain: sensor
+
+        allowed_events:
+          name: Allowed Event Types
+          description: Only these event types will generate notifications.
+          default:
+            - motion_person
+            - motion_vehicle
+            - motion_animal
+          selector:
+            select:
+              multiple: true
+              custom_value: true
+              options:
+                - label: Person
+                  value: motion_person
+                - label: Vehicle
+                  value: motion_vehicle
+                - label: Animal
+                  value: motion_animal
+                - label: Motion
+                  value: motion
+                - label: Audio
+                  value: audio
+                - label: Alert
+                  value: alert
+                - label: Triggered
+                  value: triggered
+
+    alarm_section:
+      name: Alarm Behavior
+      icon: mdi:shield-home
+      collapsed: false
+      input:
+        alarm_entity:
+          name: Alarm Entity
+          description: Notifications only send when this alarm is armed.
+          selector:
+            entity:
+              filter:
+                domain: alarm_control_panel
+
+        ignore_when_armed_home:
+          name: Ignore Cameras when Armed Home
+          description: Cameras to ignore while alarm is armed_home.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                domain: camera
+
+        ignore_when_armed_away:
+          name: Ignore Cameras when Armed Away
+          description: Cameras to ignore while alarm is armed_away.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                domain: camera
+
+        ignore_when_armed_night:
+          name: Ignore Cameras when Armed Night
+          description: Cameras to ignore while alarm is armed_night.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                domain: camera
+
+        ignore_when_armed_vacation:
+          name: Ignore Cameras when Armed Vacation
+          description: Cameras to ignore while alarm is armed_vacation.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                domain: camera
+
+    notification_section:
+      name: Notification Settings
+      icon: mdi:bell-badge
+      collapsed: false
+      input:
+        notify_service:
+          name: Notification Service
+          description: >
+            Enter the notify service to call.
+            Examples:
+            - notify.notify
+            - notify.mobile_app_your_phone
+          default: notify.notify
+          selector:
+            text:
+
+        camera_dashboard_path:
+          name: Camera Dashboard Path
+          description: >
+            Path opened by the notification tap and Open Camera action.
+
+            Examples:
+            - /dashboard-cameras
+            - /lovelace/cameras
+
+            If dynamic camera dashboard path is enabled, the camera object ID
+            is appended automatically, for example:
+            - /dashboard-cameras/frontdoor
+          default: /dashboard-cameras
+          selector:
+            text:
+
+        dynamic_camera_dashboard:
+          name: Use Dynamic Camera Dashboard Path
+          description: >
+            If enabled, opens <Camera Dashboard Path>/<camera_object_id>.
+            This requires your dashboard to be set up with matching camera
+            subviews, for example /dashboard-cameras/frontdoor.
+          default: false
+          selector:
+            boolean:
+
+    mute_section:
+      name: Notification Mute
+      icon: mdi:bell-off
+      collapsed: true
+      input:
+        notification_mute_helper:
+          name: Notification Mute Helper
+          description: >
+            Input boolean used to suppress notifications while muted.
+            This is also used by the Mute action button in the notification.
+          selector:
+            entity:
+              filter:
+                domain: input_boolean
+
+        notification_mute_duration:
+          name: Notification Mute Duration
+          description: >
+            Duration shown on the Mute action button. You still need a
+            companion automation that listens for the fixed action
+            MUTE_BLUEIRIS_LAST_EVENT and turns this helper on for the
+            desired duration.
+          default:
+            hours: 4
+            minutes: 0
+            seconds: 0
+          selector:
+            duration:
+
+    advanced_section:
+      name: Advanced Settings
+      icon: mdi:cog
+      collapsed: true
+      input:
+        ignored_states:
+          name: Ignored Sensor States
+          description: >
+            Sensor states that should never generate notifications.
+            You normally do not need to change this.
+          default:
+            - unknown
+            - unavailable
+            - none
+            - idle
+            - no event
+          selector:
+            object:
+
+mode: queued
+max: 25
+
+triggers:
+  - trigger: state
+    entity_id: !input last_event_sensors
+
+actions:
+  - variables:
+      notify_service: !input notify_service
+      allowed_events: !input allowed_events
+      ignored_states_input: !input ignored_states
+      camera_dashboard_path: !input camera_dashboard_path
+      dynamic_camera_dashboard: !input dynamic_camera_dashboard
+      notification_mute_duration: !input notification_mute_duration
+
+      ignore_when_armed_home: !input ignore_when_armed_home
+      ignore_when_armed_away: !input ignore_when_armed_away
+      ignore_when_armed_night: !input ignore_when_armed_night
+      ignore_when_armed_vacation: !input ignore_when_armed_vacation
+
+      alarm_entity: !input alarm_entity
+      alarm_state: "{{ states(alarm_entity) }}"
+
+      triggered_sensor: "{{ trigger.entity_id }}"
+      sensor_object_id: "{{ triggered_sensor.split('.')[1] }}"
+      camera_object_id: "{{ sensor_object_id | replace('_last_event', '') }}"
+      camera_entity: "camera.{{ camera_object_id }}"
+
+      event_text: "{{ trigger.to_state.state | trim }}"
+      event_type: >
+        {{ (trigger.to_state.attributes.get('event_type')
+           or trigger.to_state.state)
+           | lower
+           | trim }}
+
+      camera_name: >
+        {{ state_attr(camera_entity, 'friendly_name')
+           or trigger.to_state.name | replace(' Last Event', '') }}
+
+      image_path: >
+        {% set stored_path = trigger.to_state.attributes.get('stored_path') %}
+        {% if stored_path %}
+          {{ (stored_path | replace('/config/www', '/local')) ~ '?v=' ~ now().timestamp() }}
+        {% else %}
+          {{ '' }}
+        {% endif %}
+
+      notify_tag: "blueiris_{{ camera_object_id }}_{{ alarm_state | lower | replace(' ', '_') }}"
+      mute_action_id: "MUTE_BLUEIRIS_LAST_EVENT"
+
+      mute_action_title: >
+        {% set days = notification_mute_duration.days | default(0) | int %}
+        {% set hours = notification_mute_duration.hours | default(0) | int %}
+        {% set minutes = notification_mute_duration.minutes | default(0) | int %}
+        {% set seconds = notification_mute_duration.seconds | default(0) | int %}
+        {% if days > 0 %}
+          Mute {{ days }}d
+        {% elif hours > 0 %}
+          Mute {{ hours }}h
+        {% elif minutes > 0 %}
+          Mute {{ minutes }}m
+        {% else %}
+          Mute {{ seconds }}s
+        {% endif %}
+
+      resolved_click_action: >
+        {% if dynamic_camera_dashboard | bool %}
+          {{ camera_dashboard_path.rstrip('/') ~ '/' ~ camera_object_id }}
+        {% else %}
+          {{ camera_dashboard_path }}
+        {% endif %}
+
+      suppress_for_alarm_state: >
+        {% if alarm_state == 'armed_home' %}
+          {{ camera_entity in ignore_when_armed_home }}
+        {% elif alarm_state == 'armed_away' %}
+          {{ camera_entity in ignore_when_armed_away }}
+        {% elif alarm_state == 'armed_night' %}
+          {{ camera_entity in ignore_when_armed_night }}
+        {% elif alarm_state == 'armed_vacation' %}
+          {{ camera_entity in ignore_when_armed_vacation }}
+        {% else %}
+          false
+        {% endif %}
+
+  - condition: template
+    value_template: >
+      {{ trigger.to_state is not none }}
+
+  - condition: template
+    value_template: >
+      {{ trigger.to_state.state | lower | trim not in (ignored_states_input | map('lower') | list) }}
+
+  - condition: template
+    value_template: >
+      {{ trigger.to_state.attributes.get('event_type') is not none }}
+
+  - condition: template
+    value_template: >
+      {{ alarm_state not in ['disarmed', 'unarmed'] }}
+
+  - condition: template
+    value_template: >
+      {{ event_type in (allowed_events | map('lower') | list) }}
+
+  - condition: template
+    value_template: >
+      {{ not (suppress_for_alarm_state | bool) }}
+
+  - condition: template
+    value_template: >
+      {{ states(camera_entity) not in ['unknown', 'unavailable'] }}
+
+  - condition: state
+    entity_id: !input notification_mute_helper
+    state: "off"
+
+  - action: blueiris.latest_event_snapshot
+    target:
+      entity_id: "{{ camera_entity }}"
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >
+              {{ image_path | length > 0 }}
+        sequence:
+          - action: "{{ notify_service }}"
+            data:
+              title: >
+                {% if alarm_state == 'armed_away' %}
+                  🚨 {{ camera_name }}
+                {% elif alarm_state == 'armed_home' %}
+                  🏠 {{ camera_name }}
+                {% elif alarm_state == 'armed_night' %}
+                  🌙 {{ camera_name }}
+                {% elif alarm_state == 'armed_vacation' %}
+                  🌴 {{ camera_name }}
+                {% else %}
+                  Blue Iris: {{ camera_name }}
+                {% endif %}
+              message: >-
+                {{ event_text }}{% if alarm_state == 'armed_away' %} while Armed Away{% elif alarm_state == 'armed_home' %} while Armed Home{% elif alarm_state == 'armed_night' %} while Armed Night{% elif alarm_state == 'armed_vacation' %} while Armed Vacation{% endif %}
+              data:
+                image: "{{ image_path }}"
+                tag: "{{ notify_tag }}"
+                url: "{{ resolved_click_action }}"
+                clickAction: "{{ resolved_click_action }}"
+                actions:
+                  - action: URI
+                    title: Open Camera
+                    uri: "{{ resolved_click_action }}"
+                  - action: "{{ mute_action_id }}"
+                    title: "{{ mute_action_title }}"
+    default:
+      - action: "{{ notify_service }}"
+        data:
+          title: >
+            {% if alarm_state == 'armed_away' %}
+              🚨 {{ camera_name }}
+            {% elif alarm_state == 'armed_home' %}
+              🏠 {{ camera_name }}
+            {% elif alarm_state == 'armed_night' %}
+              🌙 {{ camera_name }}
+            {% elif alarm_state == 'armed_vacation' %}
+              🌴 {{ camera_name }}
+            {% else %}
+              Blue Iris: {{ camera_name }}
+            {% endif %}
+          message: >-
+            {{ event_text }}{% if alarm_state == 'armed_away' %} while Armed Away{% elif alarm_state == 'armed_home' %} while Armed Home{% elif alarm_state == 'armed_night' %} while Armed Night{% elif alarm_state == 'armed_vacation' %} while Armed Vacation{% endif %}
+          data:
+            tag: "{{ notify_tag }}"
+            url: "{{ resolved_click_action }}"
+            clickAction: "{{ resolved_click_action }}"
+            actions:
+              - action: URI
+                title: Open Camera
+                uri: "{{ resolved_click_action }}"
+              - action: "{{ mute_action_id }}"
+                title: "{{ mute_action_title }}"
