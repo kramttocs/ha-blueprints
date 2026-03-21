@@ -2,8 +2,6 @@
 
 A collection of Home Assistant blueprints by **kramttocs**.
 
-These blueprints are designed to be practical, reliable, and easy to maintain, with a focus on clear configuration and useful real-world automations.
-
 ---
 
 ## Available Blueprints
