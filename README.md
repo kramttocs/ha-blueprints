@@ -1,6 +1,7 @@
 # Home Assistant Blueprints
 
 A collection of Home Assistant blueprints by **kramttocs**.
+These are designed, heavily reviewed, and tested by me. AI assisted in generating documentation and some logic.
 
 ---
 
@@ -9,9 +10,9 @@ A collection of Home Assistant blueprints by **kramttocs**.
 <details>
 <summary><strong>UPS Monitor via NUT</strong></summary>
 
-Monitor a **Network UPS Tools (NUT)** device in Home Assistant and receive smart, debounced notifications when important UPS events occur.
+Monitor a **Network UPS Tools (NUT)** device
 
-This blueprint reduces noisy alerts caused by temporary sensor flapping while still notifying you of real issues like:
+This is started from a blueprint by **Hacky1** (reached out to collaborate on the forum). I was getting enough flakiness in my sensors that probably aren't the norm for most so just modified it to fit my needs. Alerts for things like:
 
 - UPS switching to **On Battery**
 - **Low Battery**
@@ -19,7 +20,7 @@ This blueprint reduces noisy alerts caused by temporary sensor flapping while st
 - **Self-test failures**
 - **High UPS load**
 
-It also supports **multiple notification devices** and **cross-platform priority notifications** for both Android and iOS.
+It also supports **multiple notification devices** and **cross-platform priority notifications** for both Android and iOS (still testing this since I just have Android).
 
 ---
 
@@ -85,15 +86,6 @@ Supports:
 | iOS Time Sensitive | Breaks through Focus modes |
 | Cross Platform High | Sends both Android and iOS priority flags |
 
-#### Multiple Devices
-
-Send alerts to **any number of mobile devices**.
-
-Example targets:
-
-- `notify.mobile_app_pixel_9_pro`
-- `notify.mobile_app_scotts_iphone`
-
 ---
 
 ### Requirements
@@ -114,7 +106,7 @@ Example targets:
 
 ### Recommended Settings
 
-For most UPS setups:
+I am still fine tuning mine but would start with these:
 
 | Setting | Recommended |
 |---------|-------------|
@@ -127,16 +119,16 @@ For most UPS setups:
 
 ### Credit
 
-Original idea and starting point credit goes to **Hacky1**.
+Original idea and starting point credit goes to **Hacky1** 
 
 </details>
 
 <details>
 <summary><strong>Blue Iris - Last Event Notifications</strong></summary>
 
-Send actionable notifications from Blue Iris last event sensors using a single automation blueprint.
+Send actionable notifications from Blue Iris last event sensors
 
-This blueprint is designed to make Blue Iris notifications cleaner and easier to manage by supporting multiple cameras, alarm-aware behavior, event filtering, optional mute support, and direct navigation back into your camera dashboard.
+Uses the last event sensors from the Blue Iris integration I am working on to make it eaiser to get useful notifications. I use and designed this for working with Alarmo.
 
 ---
 
@@ -178,7 +170,7 @@ Supports camera-specific suppression for:
 - `armed_night`
 - `armed_vacation`
 
-This makes it easy to ignore indoor cameras while home, but still notify from them while away.
+This allows you to ignore indoor cameras while home, but no for other armed states.
 
 #### Actionable Notifications
 
@@ -204,7 +196,7 @@ Or enable dynamic camera dashboard navigation so the blueprint automatically app
 
 Supports a configurable mute helper and mute duration.
 
-When paired with the companion automations below, the notification mute action can temporarily suppress future Blue Iris last event notifications.
+Requestion additonal setup (see below) but the notification mute action can temporarily suppress future Blue Iris last event notifications.
 
 ---
 
