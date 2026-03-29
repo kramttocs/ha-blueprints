@@ -416,10 +416,10 @@ mode: restart
 
 Blueprint file:
 
-`Automations/blueiris-last-event-notifications.yaml`
+`Automations/blueiris-last-motion-event-notifications.yaml`
 
 GitHub source:
 
-`https://github.com/kramttocs/ha-blueprints/blob/main/Automations/blueiris-last-event-notifications.yaml`
+`https://github.com/kramttocs/ha-blueprints/blob/main/Automations/blueiris-last-motion-event-notifications.yaml`
 
 </details>
