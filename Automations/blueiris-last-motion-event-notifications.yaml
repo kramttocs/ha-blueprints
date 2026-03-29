@@ -1,14 +1,15 @@
 blueprint:
-  name: Blue Iris - Last Event Notifications
-  description: >
-    Sends notifications for Blue Iris last event sensors using a single automation.
+  name: Blue Iris - Last Motion Event Notifications
+  description: >-
+    Sends notifications for Blue Iris last motion event sensors using a single
+    automation.
 
     Features:
     - Supports multiple Blue Iris *_last_event sensors
     - Automatically derives the matching camera entity
     - Includes the camera name in the notification
     - Only sends alerts when the selected alarm panel is armed
-    - Lets you choose which event types should notify
+    - Lets you choose which motion event types should notify
     - Lets you suppress specific cameras for specific alarm states
     - Uses the latest Blue Iris snapshot image for the triggered camera
     - Optional dynamic dashboard navigation per camera
@@ -19,29 +20,31 @@ blueprint:
     - Camera entity: camera.<camera_object_id>
 
   domain: automation
-  source_url: https://github.com/kramttocs/ha-blueprints/blob/main/Automations/blueiris-last-event-notifications.yaml
+  source_url: https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-event-notifications.yaml
 
   input:
     camera_section:
-      name: Cameras and Events
+      name: Cameras and Motion Events
       icon: mdi:cctv
       collapsed: false
       input:
         last_event_sensors:
           name: Last Event Sensors
-          description: >
-            Select one or more Blue Iris last event sensors.
-            These are typically named like sensor.<camera_name>_last_event.
+          description: >-
+            Select one or more Blue Iris last event sensors. These are
+            typically named like sensor.<camera_name>_last_event.
           selector:
             entity:
               multiple: true
               filter:
-                integration: blueiris
-                domain: sensor
+                - integration: blueiris
+                  domain:
+                    - sensor
+              reorder: false
 
         allowed_events:
-          name: Allowed Event Types
-          description: Only these event types will generate notifications.
+          name: Allowed Motion Event Types
+          description: Only these motion event types will generate notifications.
           default:
             - motion_person
             - motion_vehicle
@@ -57,14 +60,11 @@ blueprint:
                   value: motion_vehicle
                 - label: Animal
                   value: motion_animal
+                - label: Multi
+                  value: motion_multi
                 - label: Motion
                   value: motion
-                - label: Audio
-                  value: audio
-                - label: Alert
-                  value: alert
-                - label: Triggered
-                  value: triggered
+              sort: false
 
     alarm_section:
       name: Alarm Behavior
@@ -77,7 +77,10 @@ blueprint:
           selector:
             entity:
               filter:
-                domain: alarm_control_panel
+                - domain:
+                    - alarm_control_panel
+              reorder: false
+              multiple: false
 
         ignore_when_armed_home:
           name: Ignore Cameras when Armed Home
@@ -87,7 +90,10 @@ blueprint:
             entity:
               multiple: true
               filter:
-                domain: camera
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
 
         ignore_when_armed_away:
           name: Ignore Cameras when Armed Away
@@ -97,7 +103,10 @@ blueprint:
             entity:
               multiple: true
               filter:
-                domain: camera
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
 
         ignore_when_armed_night:
           name: Ignore Cameras when Armed Night
@@ -107,7 +116,10 @@ blueprint:
             entity:
               multiple: true
               filter:
-                domain: camera
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
 
         ignore_when_armed_vacation:
           name: Ignore Cameras when Armed Vacation
@@ -117,7 +129,10 @@ blueprint:
             entity:
               multiple: true
               filter:
-                domain: camera
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
 
     notification_section:
       name: Notification Settings
@@ -126,40 +141,43 @@ blueprint:
       input:
         notify_service:
           name: Notification Service
-          description: >
-            Enter the notify service to call.
-            Examples:
+          description: >-
+            Enter the notify service to call. Examples:
             - notify.notify
             - notify.mobile_app_your_phone
           default: notify.notify
           selector:
             text:
+              multiple: false
+              multiline: false
 
         camera_dashboard_path:
           name: Camera Dashboard Path
-          description: >
+          description: >-
             Path opened by the notification tap and Open Camera action.
 
             Examples:
             - /dashboard-cameras
             - /lovelace/cameras
 
-            If dynamic camera dashboard path is enabled, the camera object ID
-            is appended automatically, for example:
+            If dynamic camera dashboard path is enabled, the camera object ID is appended
+            automatically, for example:
             - /dashboard-cameras/frontdoor
           default: /dashboard-cameras
           selector:
             text:
+              multiple: false
+              multiline: false
 
         dynamic_camera_dashboard:
           name: Use Dynamic Camera Dashboard Path
-          description: >
+          description: >-
             If enabled, opens <Camera Dashboard Path>/<camera_object_id>.
             This requires your dashboard to be set up with matching camera
             subviews, for example /dashboard-cameras/frontdoor.
           default: false
           selector:
-            boolean:
+            boolean: {}
 
     mute_section:
       name: Notification Mute
@@ -168,17 +186,20 @@ blueprint:
       input:
         notification_mute_helper:
           name: Notification Mute Helper
-          description: >
+          description: >-
             Input boolean used to suppress notifications while muted.
             This is also used by the Mute action button in the notification.
           selector:
             entity:
               filter:
-                domain: input_boolean
+                - domain:
+                    - input_boolean
+              reorder: false
+              multiple: false
 
         notification_mute_duration:
           name: Notification Mute Duration
-          description: >
+          description: >-
             Duration shown on the Mute action button. You still need a
             companion automation that listens for the fixed action
             MUTE_BLUEIRIS_LAST_EVENT and turns this helper on for the
@@ -189,6 +210,77 @@ blueprint:
             seconds: 0
           selector:
             duration:
+              enable_second: true
+
+    event_suppression_section:
+      name: Per-Motion-Event Camera Suppression
+      icon: mdi:filter-remove
+      collapsed: true
+      input:
+        ignore_cameras_for_person:
+          name: Ignore Cameras for Motion Person
+          description: Cameras to ignore for motion_person events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_cameras_for_vehicle:
+          name: Ignore Cameras for Motion Vehicle
+          description: Cameras to ignore for motion_vehicle events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_cameras_for_animal:
+          name: Ignore Cameras for Motion Animal
+          description: Cameras to ignore for motion_animal events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_cameras_for_multi:
+          name: Ignore Cameras for Motion Multi
+          description: Cameras to ignore for motion_multi events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_cameras_for_motion:
+          name: Ignore Cameras for Motion
+          description: Cameras to ignore for motion events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
 
     advanced_section:
       name: Advanced Settings
@@ -197,9 +289,9 @@ blueprint:
       input:
         ignored_states:
           name: Ignored Sensor States
-          description: >
-            Sensor states that should never generate notifications.
-            You normally do not need to change this.
+          description: >-
+            Sensor states that should never generate notifications. You
+            normally do not need to change this.
           default:
             - unknown
             - unavailable
@@ -208,6 +300,7 @@ blueprint:
             - no event
           selector:
             object:
+              multiple: false
 
 mode: queued
 max: 25
@@ -229,6 +322,12 @@ actions:
       ignore_when_armed_away: !input ignore_when_armed_away
       ignore_when_armed_night: !input ignore_when_armed_night
       ignore_when_armed_vacation: !input ignore_when_armed_vacation
+
+      ignore_cameras_for_motion: !input ignore_cameras_for_motion
+      ignore_cameras_for_person: !input ignore_cameras_for_person
+      ignore_cameras_for_vehicle: !input ignore_cameras_for_vehicle
+      ignore_cameras_for_animal: !input ignore_cameras_for_animal
+      ignore_cameras_for_multi: !input ignore_cameras_for_multi
 
       alarm_entity: !input alarm_entity
       alarm_state: "{{ states(alarm_entity) }}"
@@ -295,6 +394,21 @@ actions:
           false
         {% endif %}
 
+      suppress_for_event_type: >
+        {% if event_type == 'motion' %}
+          {{ camera_entity in ignore_cameras_for_motion }}
+        {% elif event_type == 'motion_person' %}
+          {{ camera_entity in ignore_cameras_for_person }}
+        {% elif event_type == 'motion_vehicle' %}
+          {{ camera_entity in ignore_cameras_for_vehicle }}
+        {% elif event_type == 'motion_animal' %}
+          {{ camera_entity in ignore_cameras_for_animal }}
+        {% elif event_type == 'motion_multi' %}
+          {{ camera_entity in ignore_cameras_for_multi }}
+        {% else %}
+          false
+        {% endif %}
+
   - condition: template
     value_template: >
       {{ trigger.to_state is not none }}
@@ -318,6 +432,10 @@ actions:
   - condition: template
     value_template: >
       {{ not (suppress_for_alarm_state | bool) }}
+
+  - condition: template
+    value_template: >
+      {{ not (suppress_for_event_type | bool) }}
 
   - condition: template
     value_template: >
