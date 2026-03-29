@@ -119,16 +119,18 @@ I am still fine tuning mine but would start with these:
 
 ### Credit
 
-Original idea and starting point credit goes to **Hacky1** 
+Original idea and starting point credit goes to **Hacky1**
 
 </details>
 
 <details>
-<summary><strong>Blue Iris - Last Event Notifications</strong></summary>
+<summary><strong>Blue Iris - Last Motion Event Notifications</strong></summary>
 
-Send actionable notifications from Blue Iris last event sensors
+Send actionable notifications from Blue Iris last motion event sensors.
 
-Uses the last event sensors from the Blue Iris integration I am working on to make it eaiser to get useful notifications. I use and designed this for working with Alarmo.
+This blueprint is built around the **Last Event sensors** from my Blue Iris integration and is designed to make motion notifications more useful, camera-aware, and Alarmo-friendly.
+
+It currently focuses on **motion-related last events only**.
 
 ---
 
@@ -136,7 +138,7 @@ Uses the last event sensors from the Blue Iris integration I am working on to ma
 
 Click the button below to import the blueprint into Home Assistant.
 
-[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-event-notifications.yaml)
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-motion-event-notifications.yaml)
 
 ---
 
@@ -149,15 +151,17 @@ Click the button below to import the blueprint into Home Assistant.
 - Includes the camera name in the notification title
 - Uses the latest Blue Iris snapshot image when available
 
-#### Event Filtering
+#### Motion Event Filtering
 
-Only notify for the event types you care about.
+Only notify for the motion event types you care about.
 
-Examples:
+Supported values:
 
 - `motion_person`
 - `motion_vehicle`
 - `motion_animal`
+- `motion_multi`
+- `motion`
 
 #### Alarm-Aware Behavior
 
@@ -170,7 +174,22 @@ Supports camera-specific suppression for:
 - `armed_night`
 - `armed_vacation`
 
-This allows you to ignore indoor cameras while home, but no for other armed states.
+This allows you to ignore indoor cameras while home, but still receive notifications from them for other armed states.
+
+#### Per-Motion-Event Camera Suppression
+
+Supports suppressing specific cameras for specific motion event types:
+
+- Motion Person
+- Motion Vehicle
+- Motion Animal
+- Motion Multi
+- Motion
+
+This makes it possible to do things like:
+- ignore animal detections on one camera
+- still allow person detections on that same camera
+- still allow animal detections on other cameras
 
 #### Actionable Notifications
 
@@ -196,7 +215,7 @@ Or enable dynamic camera dashboard navigation so the blueprint automatically app
 
 Supports a configurable mute helper and mute duration.
 
-Requestion additonal setup (see below) but the notification mute action can temporarily suppress future Blue Iris last event notifications.
+This requires additional setup shown below, but the notification mute action can temporarily suppress future Blue Iris last motion event notifications.
 
 ---
 
@@ -204,7 +223,7 @@ Requestion additonal setup (see below) but the notification mute action can temp
 
 - Home Assistant
 - **Blue Iris integration**
-- Blue Iris last event sensors with `event_type`
+- Blue Iris last event sensors with motion-based `event_type`
 - Matching Blue Iris camera entities
 - **Home Assistant Mobile App** for actionable notifications
 - Optional: `input_boolean` helper for notification mute support
@@ -227,13 +246,13 @@ Example:
 
 ### Blueprint Inputs
 
-#### Cameras and Events
+#### Cameras and Motion Events
 
 - **Last Event Sensors**  
   Select one or more Blue Iris last event sensors.
 
-- **Allowed Event Types**  
-  Choose which `event_type` values should trigger notifications.
+- **Allowed Motion Event Types**  
+  Choose which motion `event_type` values should trigger notifications.
 
 #### Alarm Behavior
 
@@ -267,6 +286,16 @@ These let you suppress selected cameras for specific alarm states.
 
 - **Notification Mute Duration**  
   Duration shown on the mute action button and used by the companion mute reset automation.
+
+#### Per-Motion-Event Camera Suppression
+
+- **Ignore Cameras for Motion Person**
+- **Ignore Cameras for Motion Vehicle**
+- **Ignore Cameras for Motion Animal**
+- **Ignore Cameras for Motion Multi**
+- **Ignore Cameras for Motion**
+
+These let you suppress specific cameras for specific motion event types.
 
 #### Advanced Settings
 
@@ -329,7 +358,7 @@ actions:
     action: notify.notify
     data:
       title: Blue Iris Notifications Muted
-      message: Last event notifications muted for 4 hours.
+      message: Last motion event notifications muted for 4 hours.
 mode: queued
 max: 10
 ```
@@ -369,6 +398,13 @@ mode: restart
 
 - The blueprint uses the fixed notification action:
   - `MUTE_BLUEIRIS_LAST_EVENT`
+- This blueprint is currently intended for **motion-related last events**.
+- Supported motion event types are:
+  - `motion_person`
+  - `motion_vehicle`
+  - `motion_animal`
+  - `motion_multi`
+  - `motion`
 - If the last event sensor provides a stored snapshot path, the notification includes the image automatically.
 - If no stored snapshot path is available, the notification is still sent without an image.
 - The mute helper and mute duration in the companion automations should match the values selected in the blueprint.
@@ -380,10 +416,10 @@ mode: restart
 
 Blueprint file:
 
-`Automations/blueiris-last-event-notifications.yaml`
+`Automations/blueiris-last-motion-event-notifications.yaml`
 
 GitHub source:
 
-`https://github.com/kramttocs/ha-blueprints/blob/main/Automations/blueiris-last-event-notifications.yaml`
+`https://github.com/kramttocs/ha-blueprints/blob/main/Automations/blueiris-last-motion-event-notifications.yaml`
 
 </details>
