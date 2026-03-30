@@ -365,7 +365,7 @@ max: 10
 
 #### 2) Blue Iris - Reset Last Motion Event Notification Mute
 
-Turns the mute helper back off after the selected duration.
+Turns the mute helper back off after the selected duration. Note that you can also use a timer for this instead of a 'for' duration. That's what I do personally but kept the example as simple as possible.
 
 ```yaml
 alias: Blue Iris - Reset Last Motion Event Notification Mute
