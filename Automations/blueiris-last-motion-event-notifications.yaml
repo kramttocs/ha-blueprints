@@ -5,7 +5,7 @@ blueprint:
     automation.
 
     Features:
-    - Supports multiple Blue Iris *_last_event sensors
+    - Supports multiple Blue Iris *_last_motion_event sensors
     - Automatically derives the matching camera entity
     - Includes the camera name in the notification
     - Only sends alerts when the selected alarm panel is armed
@@ -16,11 +16,11 @@ blueprint:
     - Supports a configurable mute helper and mute duration
 
     Naming assumptions:
-    - Sensor entity: sensor.<camera_object_id>_last_event
+    - Sensor entity: sensor.<camera_object_id>_last_motion_event
     - Camera entity: camera.<camera_object_id>
 
   domain: automation
-  source_url: https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-event-notifications.yaml
+  source_url: https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-motion-event-notifications.yaml
 
   input:
     camera_section:
@@ -28,11 +28,11 @@ blueprint:
       icon: mdi:cctv
       collapsed: false
       input:
-        last_event_sensors:
-          name: Last Event Sensors
+        last_motion_event_sensors:
+          name: Last Motion Event Sensors
           description: >-
-            Select one or more Blue Iris last event sensors. These are
-            typically named like sensor.<camera_name>_last_event.
+            Select one or more Blue Iris last motion event sensors. These are
+            typically named like sensor.<camera_name>_last_motion_event.
           selector:
             entity:
               multiple: true
@@ -202,7 +202,7 @@ blueprint:
           description: >-
             Duration shown on the Mute action button. You still need a
             companion automation that listens for the fixed action
-            MUTE_BLUEIRIS_LAST_EVENT and turns this helper on for the
+            MUTE_BLUEIRIS_LAST_MOTION_EVENT and turns this helper on for the
             desired duration.
           default:
             hours: 4
@@ -307,7 +307,7 @@ max: 25
 
 triggers:
   - trigger: state
-    entity_id: !input last_event_sensors
+    entity_id: !input last_motion_event_sensors
 
 actions:
   - variables:
@@ -334,7 +334,7 @@ actions:
 
       triggered_sensor: "{{ trigger.entity_id }}"
       sensor_object_id: "{{ triggered_sensor.split('.')[1] }}"
-      camera_object_id: "{{ sensor_object_id | replace('_last_event', '') }}"
+      camera_object_id: "{{ sensor_object_id | replace('_last_motion_event', '') }}"
       camera_entity: "camera.{{ camera_object_id }}"
 
       event_text: "{{ trigger.to_state.state | trim }}"
@@ -346,7 +346,7 @@ actions:
 
       camera_name: >
         {{ state_attr(camera_entity, 'friendly_name')
-           or trigger.to_state.name | replace(' Last Event', '') }}
+           or trigger.to_state.name | replace(' Last Motion Event', '') }}
 
       image_path: >
         {% set stored_path = trigger.to_state.attributes.get('stored_path') %}
@@ -357,7 +357,7 @@ actions:
         {% endif %}
 
       notify_tag: "blueiris_{{ camera_object_id }}_{{ alarm_state | lower | replace(' ', '_') }}"
-      mute_action_id: "MUTE_BLUEIRIS_LAST_EVENT"
+      mute_action_id: "MUTE_BLUEIRIS_LAST_MOTION_EVENT"
 
       mute_action_title: >
         {% set days = notification_mute_duration.days | default(0) | int %}
@@ -445,7 +445,7 @@ actions:
     entity_id: !input notification_mute_helper
     state: "off"
 
-  - action: blueiris.latest_event_snapshot
+  - action: blueiris.latest_motion_event_snapshot
     target:
       entity_id: "{{ camera_entity }}"
 

@@ -128,9 +128,9 @@ Original idea and starting point credit goes to **Hacky1**
 
 Send actionable notifications from Blue Iris last motion event sensors.
 
-This blueprint is built around the **Last Event sensors** from my Blue Iris integration and is designed to make motion notifications more useful, camera-aware, and Alarmo-friendly.
+This blueprint is built around the **Last Motion Event sensors** from my Blue Iris integration and is designed to make motion notifications more useful, camera-aware, and Alarmo-friendly.
 
-It currently focuses on **motion-related last events only**.
+It currently focuses on **motion-related last motion events only**.
 
 ---
 
@@ -146,7 +146,7 @@ Click the button below to import the blueprint into Home Assistant.
 
 #### Camera-Aware Notifications
 
-- Supports multiple Blue Iris `*_last_event` sensors in a single automation
+- Supports multiple Blue Iris `*_last_motion_event` sensors in a single automation
 - Automatically derives the matching camera entity from the selected sensor
 - Includes the camera name in the notification title
 - Uses the latest Blue Iris snapshot image when available
@@ -223,7 +223,7 @@ This requires additional setup shown below, but the notification mute action can
 
 - Home Assistant
 - **Blue Iris integration**
-- Blue Iris last event sensors with motion-based `event_type`
+- Blue Iris last motion event sensors with motion-based `event_type`
 - Matching Blue Iris camera entities
 - **Home Assistant Mobile App** for actionable notifications
 - Optional: `input_boolean` helper for notification mute support
@@ -234,12 +234,12 @@ This requires additional setup shown below, but the notification mute action can
 
 This blueprint assumes the following naming relationship:
 
-- Last event sensor: `sensor.<camera_object_id>_last_event`
+- Last motion event sensor: `sensor.<camera_object_id>_last_motion_event`
 - Matching camera: `camera.<camera_object_id>`
 
 Example:
 
-- `sensor.home_driveway_last_event`
+- `sensor.home_driveway_last_motion_event`
 - `camera.home_driveway`
 
 ---
@@ -248,8 +248,8 @@ Example:
 
 #### Cameras and Motion Events
 
-- **Last Event Sensors**  
-  Select one or more Blue Iris last event sensors.
+- **Last Motion Event Sensors**  
+  Select one or more Blue Iris last motion event sensors.
 
 - **Allowed Motion Event Types**  
   Choose which motion `event_type` values should trigger notifications.
@@ -346,13 +346,13 @@ conditions:
   - alias: Only continue for the Blue Iris mute action
     condition: template
     value_template: |
-      {{ trigger.event.data.action == 'MUTE_BLUEIRIS_LAST_EVENT' }}
+      {{ trigger.event.data.action == 'MUTE_BLUEIRIS_LAST_MOTION_EVENT' }}
 actions:
   - alias: Turn on the Blue Iris notification mute helper
     action: input_boolean.turn_on
     target:
       entity_id:
-        - input_boolean.blue_iris_mute_last_event_notification
+        - input_boolean.blue_iris_mute_last_motion_event_notification
     data: {}
   - alias: Send optional confirmation notification
     action: notify.notify
@@ -363,18 +363,18 @@ mode: queued
 max: 10
 ```
 
-#### 2) Blue Iris - Reset Last Event Notification Mute
+#### 2) Blue Iris - Reset Last Motion Event Notification Mute
 
 Turns the mute helper back off after the selected duration.
 
 ```yaml
-alias: Blue Iris - Reset Last Event Notification Mute
+alias: Blue Iris - Reset Last Motion Event Notification Mute
 description: "Automatically turns off the configured Blue Iris notification mute helper after the selected mute duration."
 triggers:
   - alias: Mute helper has been on for the full mute duration
     trigger: state
     entity_id:
-      - input_boolean.blue_iris_mute_last_event_notification
+      - input_boolean.blue_iris_mute_last_motion_event_notification
     to:
       - "on"
     for:
@@ -387,7 +387,7 @@ actions:
     action: input_boolean.turn_off
     target:
       entity_id:
-        - input_boolean.blue_iris_mute_last_event_notification
+        - input_boolean.blue_iris_mute_last_motion_event_notification
     data: {}
 mode: restart
 ```
@@ -397,15 +397,15 @@ mode: restart
 ### Notes
 
 - The blueprint uses the fixed notification action:
-  - `MUTE_BLUEIRIS_LAST_EVENT`
-- This blueprint is currently intended for **motion-related last events**.
+  - `MUTE_BLUEIRIS_LAST_MOTION_EVENT`
+- This blueprint is currently intended for **motion-related last motion events**.
 - Supported motion event types are:
   - `motion_person`
   - `motion_vehicle`
   - `motion_animal`
   - `motion_multi`
   - `motion`
-- If the last event sensor provides a stored snapshot path, the notification includes the image automatically.
+- If the last motion event sensor provides a stored snapshot path, the notification includes the image automatically.
 - If no stored snapshot path is available, the notification is still sent without an image.
 - The mute helper and mute duration in the companion automations should match the values selected in the blueprint.
 - The notification service is entered manually so the blueprint remains portable across different Home Assistant installs.
