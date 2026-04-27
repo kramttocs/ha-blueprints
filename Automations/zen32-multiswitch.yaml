@@ -1,0 +1,1972 @@
+blueprint:
+  name: ZEN32 and ZEN35 Scene and State (Z-Wave JS)
+  description: 'Trigger on button press with LED state tracking for Zooz ZEN32 or
+    ZEN35.
+
+    Please configure any other Z-Wave parameters on the device page
+
+    **Version**: 2026.4.27
+    Credit to rwalker777. I was getting errors so modified it to use ints instead of strings
+    '
+  domain: automation
+  source_url: https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/zen32-multiswitch.yaml
+  homeassistant:
+    min_version: 2024.6.0
+  input:
+    Switch_params:
+      name: Switch and Paramters
+      input:
+        zooz_switch:
+          name: Zooz scene controller
+          description: List of available Zooz ZEN32 or ZEN35 switches.
+          selector:
+            device:
+              filter:
+              - integration: zwave_js
+                manufacturer: Zooz
+                model: ZEN32
+              - integration: zwave_js
+                manufacturer: Zooz
+                model: ZEN32 800LR
+              - integration: zwave_js
+                manufacturer: Zooz
+                model: ZEN35
+              multiple: false
+        p19_relay_control:
+          name: Parameter 19 - Enable or Disable relay control
+          description: Disable for smart bulb mode or if there is no load attached
+            to the relay or you want the button to be scene only
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Local control disabled (Smart bulb mode)
+                value: '0'
+              - label: Local and Z-Wave control enabled
+                value: '1'
+              - label: Local and Z-Wave control disabled
+                value: '2'
+              sort: false
+              custom_value: false
+              multiple: false
+        p20_relay_led_report:
+          name: Parameter 20 - Enable or Disable reporting and LED toggle if relay
+            is disabled
+          description: It *should* be disabled
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Enable
+                value: '0'
+              - label: Disable
+                value: '1'
+              sort: false
+              custom_value: false
+              multiple: false
+        turn_off_untracked:
+          name: Turn Off Untracked LEDs
+          description: If enabled, any scene buttons that do not have a tracked entity
+            will have their LEDs permanently turned off (Always Off).
+          default: false
+          selector:
+            boolean: {}
+    nightime:
+      name: Nighttime settings
+      collapsed: true
+      input:
+        night_entity:
+          name: Nighttime State Entity (Optional Override)
+          description: Select a toggle (e.g., your input_boolean.night_mode), binary_sensor,
+            or sun entity. When 'on' or 'below_horizon', it is Nighttime. If used,
+            this OVERRIDES the specific times below.
+          default: []
+          selector:
+            entity:
+              multiple: false
+              domain:
+              - binary_sensor
+              - input_boolean
+              - sensor
+              - sun
+              reorder: false
+        invert_night_entity:
+          name: Invert Night Entity Logic
+          description: Enable this if you are using a 'Daytime' entity. It reverses
+            the logic so 'on/below_horizon' equals Daytime instead of Nighttime.
+          default: false
+          selector:
+            boolean: {}
+        schedule_start:
+          name: Night time LEDs start time (Fallback)
+          description: LEDs are dimmed or turned off at this time. Used ONLY if no
+            Nighttime State Entity is selected above. To disable leave at 00:00:00
+            default.
+          default: 00:00:00
+          selector:
+            time: {}
+        night_led_brightness:
+          name: Night time brightness setting.
+          description: Override brightness of LEDs between schedule times or when
+            the Night Entity is active.
+          default: '99'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: No change
+                value: '99'
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        night_led_color:
+          name: Night time color setting.
+          description: Override color of LEDs between schedule times or when the Night
+            Entity is active.
+          default: '99'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: No change
+                value: '99'
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        schedule_stop:
+          name: Night time LEDs stop time (Fallback)
+          description: LED tracking is restored. Used ONLY if no Nighttime State Entity
+            is selected. To disable leave at 00:00:00 default.
+          default: 00:00:00
+          selector:
+            time: {}
+    button0:
+      name: Relay button - big button
+      input:
+        track_relay0:
+          name: Big button - LED Track relay
+          description: Set to have the LED state track the relay.  Disable to have
+            LED track scene or over-ride entity and follow nighttime.
+          default: '0'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: On when load is off
+                value: '0'
+              - label: On when load is on
+                value: '1'
+              - label: Disabled
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        scene_5:
+          name: Big button - Pressed Once
+          description: Action to run when button is pressed once.
+          default: []
+          selector:
+            action: {}
+        input_entity0:
+          name: Entity for button 1 (Big button)
+          description: Choose entity for LED state to track
+          default: []
+          selector:
+            entity:
+              multiple: false
+              domain:
+              - alarm_control_panel
+              - automation
+              - binary_sensor
+              - climate
+              - cover
+              - device_tracker
+              - fan
+              - humidifier
+              - input_boolean
+              - light
+              - lock
+              - media_player
+              - person
+              - schedule
+              - script
+              - sensor
+              - siren
+              - switch
+              - timer
+              - update
+              - valve
+              reorder: false
+        off_state0:
+          name: Off behavior for button 1
+          description: Led state when target is off, closed, disarmed or locked
+          default: '99'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_color0:
+          name: Off color for button 1
+          description: Color for led when target is off (default white)
+          default: '0'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_brightness0:
+          name: Brightness when button 1 entity is off
+          description: LED brightness when entity is off.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_state0:
+          name: On behavior for button 1
+          description: Led state when target is on, opened, armed or unlocked
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_color0:
+          name: On color for button 1
+          description: Color for led when target is on (default white)
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_brightness0:
+          name: Brightness when button 1 entity is on
+          description: LED brightness when entity is on.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_state0:
+          name: Unavailable State for button 1
+          description: Led state when target is unavailable
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_color0:
+          name: Unavailable Color for button 1
+          description: Color for led when target is unavailable (default red)
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_brightness0:
+          name: Unavailable brightness for button 1
+          description: LED brightness when entity is unavailable
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+    button0_multipress:
+      name: Big button Multipress
+      collapsed: true
+      input:
+        scene_5h:
+          name: Scene 5 - Held
+          description: Action to run when button is held.
+          default: []
+          selector:
+            action: {}
+        scene_5r:
+          name: Scene 5 - Released
+          description: Action to run when button is released.
+          default: []
+          selector:
+            action: {}
+        scene_52:
+          name: Scene 5 - Pressed 2x
+          description: Action to run when button is pressed twice.
+          default: []
+          selector:
+            action: {}
+        scene_53:
+          name: Scene 5 - Pressed 3x
+          description: Action to run when button is pressed three times.
+          default: []
+          selector:
+            action: {}
+        scene_54:
+          name: Scene 5 - Pressed 4x
+          description: Action to run when button is pressed four times.
+          default: []
+          selector:
+            action: {}
+        scene_55:
+          name: Scene 5 - Pressed 5x
+          description: Action to run when button is pressed five times.
+          default: []
+          selector:
+            action: {}
+    button2:
+      name: Button 2 - Top left button
+      input:
+        scene_1:
+          name: Top left button - Pressed Once
+          description: Action to run when button is pressed once.
+          default: []
+          selector:
+            action: {}
+        input_entity1:
+          name: Entity for button 2 (Top left button)
+          description: Choose entity for LED state to track
+          default: []
+          selector:
+            entity:
+              multiple: false
+              domain:
+              - alarm_control_panel
+              - automation
+              - binary_sensor
+              - climate
+              - cover
+              - device_tracker
+              - fan
+              - humidifier
+              - input_boolean
+              - light
+              - lock
+              - media_player
+              - person
+              - schedule
+              - script
+              - sensor
+              - siren
+              - switch
+              - timer
+              - update
+              - valve
+              reorder: false
+        off_state1:
+          name: Off behavior for button 2
+          description: Led state when target is off, closed, disarmed or locked
+          default: '99'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_color1:
+          name: Off color for button 2
+          description: Color for led when target is off (default white)
+          default: '0'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_brightness1:
+          name: Brightness when button 2 entity is off
+          description: LED brightness when entity is off.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_state1:
+          name: On behavior for button 2
+          description: Led state when target is on, opened, armed or unlocked
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_color1:
+          name: On color for button 2
+          description: Color for led when target is on (default white)
+          default: '2'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_brightness1:
+          name: Brightness when button 2 entity is on
+          description: LED brightness when entity is on.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_state1:
+          name: Unavailable State for button 2
+          description: Led state when target is unavailable
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_color1:
+          name: Unavailable Color for button 2
+          description: Color for led when target is unavailable (default red)
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_brightness1:
+          name: Unavailable brightness for button 2
+          description: LED brightness when entity is unavailable
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+    button2_multipress:
+      name: Button 2 Multipress - Top left button
+      collapsed: true
+      input:
+        scene_1h:
+          name: Scene 1 - Held
+          description: Action to run when button is held.
+          default: []
+          selector:
+            action: {}
+        scene_1r:
+          name: Scene 1 - Released
+          description: Action to run when button is released.
+          default: []
+          selector:
+            action: {}
+        scene_12:
+          name: Scene 1 - Pressed 2x
+          description: Action to run when button is pressed twice.
+          default: []
+          selector:
+            action: {}
+        scene_13:
+          name: Scene 1 - Pressed 3x
+          description: Action to run when button is pressed three times.
+          default: []
+          selector:
+            action: {}
+        scene_14:
+          name: Scene 1 - Pressed 4x
+          description: Action to run when button is pressed four times.
+          default: []
+          selector:
+            action: {}
+        scene_15:
+          name: Scene 1 - Pressed 5x
+          description: Action to run when button is pressed five times.
+          default: []
+          selector:
+            action: {}
+    button3:
+      name: Button 3 - Top right button
+      input:
+        scene_2:
+          name: Top right button - Pressed Once
+          description: Action to run when button is pressed once.
+          default: []
+          selector:
+            action: {}
+        input_entity2:
+          name: Entity for button 3 (Top right button)
+          description: Choose entity for LED state to track
+          default: []
+          selector:
+            entity:
+              multiple: false
+              domain:
+              - alarm_control_panel
+              - automation
+              - binary_sensor
+              - climate
+              - cover
+              - device_tracker
+              - fan
+              - humidifier
+              - input_boolean
+              - light
+              - lock
+              - media_player
+              - person
+              - schedule
+              - script
+              - sensor
+              - siren
+              - switch
+              - timer
+              - update
+              - valve
+              reorder: false
+        off_state2:
+          name: Off behavior for button 3
+          description: Led state when target is off, closed, disarmed or locked
+          default: '99'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_color2:
+          name: Off color for button 3
+          description: Color for led when target is off (default white)
+          default: '0'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_brightness2:
+          name: Brightness when button 3 entity is off
+          description: LED brightness when entity is off.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_state2:
+          name: On behavior for button 3
+          description: Led state when target is on, opened, armed or unlocked
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_color2:
+          name: On color for button 3
+          description: Color for led when target is on (default white)
+          default: '2'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_brightness2:
+          name: Brightness when button 3 entity is on
+          description: LED brightness when entity is on.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_state2:
+          name: Unavailable State for button 3
+          description: Led state when target is unavailable
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_color2:
+          name: Unavailable Color for button 3
+          description: Color for led when target is unavailable (default red)
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_brightness2:
+          name: Unavailable brightness for button 3
+          description: LED brightness when entity is unavailable
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+    button3_multipress:
+      name: Button 3 Multipress - Top right button
+      collapsed: true
+      input:
+        scene_2h:
+          name: Scene 2 - Held
+          description: Action to run when button is held.
+          default: []
+          selector:
+            action: {}
+        scene_2r:
+          name: Scene 2 - Released
+          description: Action to run when button is released.
+          default: []
+          selector:
+            action: {}
+        scene_22:
+          name: Scene 2 - Pressed 2x
+          description: Action to run when button is pressed twice.
+          default: []
+          selector:
+            action: {}
+        scene_23:
+          name: Scene 2 - Pressed 3x
+          description: Action to run when button is pressed three times.
+          default: []
+          selector:
+            action: {}
+        scene_24:
+          name: Scene 2 - Pressed 4x
+          description: Action to run when button is pressed four times.
+          default: []
+          selector:
+            action: {}
+        scene_25:
+          name: Scene 2 - Pressed 5x
+          description: Action to run when button is pressed five times.
+          default: []
+          selector:
+            action: {}
+    button4:
+      name: Button 4 - Bottom left button
+      input:
+        scene_3:
+          name: Bottom left button - Pressed Once
+          description: Action to run when button is pressed once.
+          default: []
+          selector:
+            action: {}
+        input_entity3:
+          name: Entity for button 4 (Bottom left button)
+          description: Choose entity for LED state to track
+          default: []
+          selector:
+            entity:
+              multiple: false
+              domain:
+              - alarm_control_panel
+              - automation
+              - binary_sensor
+              - climate
+              - cover
+              - device_tracker
+              - fan
+              - humidifier
+              - input_boolean
+              - light
+              - lock
+              - media_player
+              - person
+              - schedule
+              - script
+              - sensor
+              - siren
+              - switch
+              - timer
+              - update
+              - valve
+              reorder: false
+        off_state3:
+          name: Off behavior for button 4
+          description: Led state when target is off, closed, disarmed or locked
+          default: '99'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_color3:
+          name: Off color for button 4
+          description: Color for led when target is off (default white)
+          default: '0'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_brightness3:
+          name: Brightness when button 4 entity is off
+          description: LED brightness when entity is off.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_state3:
+          name: On behavior for button 4
+          description: Led state when target is on, opened, armed or unlocked
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_color3:
+          name: On color for button 4
+          description: Color for led when target is on (default white)
+          default: '2'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_brightness3:
+          name: Brightness when button 4 entity is on
+          description: LED brightness when entity is on.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_state3:
+          name: Unavailable State for button 4
+          description: Led state when target is unavailable
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_color3:
+          name: Unavailable Color for button 4
+          description: Color for led when target is unavailable (default red)
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_brightness3:
+          name: Brightness when button 4 entity is on
+          description: LED brightness when entity is on.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+    button4_multipress:
+      name: Button 4 Multipress - Bottom left button
+      collapsed: true
+      input:
+        scene_3h:
+          name: Scene 3 - Held
+          description: Action to run when button is held.
+          default: []
+          selector:
+            action: {}
+        scene_3r:
+          name: Scene 3 - Released
+          description: Action to run when button is released.
+          default: []
+          selector:
+            action: {}
+        scene_32:
+          name: Scene 3 - Pressed 2x
+          description: Action to run when button is pressed twice.
+          default: []
+          selector:
+            action: {}
+        scene_33:
+          name: Scene 3 - Pressed 3x
+          description: Action to run when button is pressed three times.
+          default: []
+          selector:
+            action: {}
+        scene_34:
+          name: Scene 3 - Pressed 4x
+          description: Action to run when button is pressed four times.
+          default: []
+          selector:
+            action: {}
+        scene_35:
+          name: Scene 3 - Pressed 5x
+          description: Action to run when button is pressed five times.
+          default: []
+          selector:
+            action: {}
+    button5:
+      name: Button 5 - bottom right
+      input:
+        scene_4:
+          name: Bottom right button - Pressed Once
+          description: Action to run when button is pressed once.
+          default: []
+          selector:
+            action: {}
+        input_entity4:
+          name: Entity for button 5 (Bottom right button)
+          description: Choose entity for LED state to track
+          default: []
+          selector:
+            entity:
+              multiple: false
+              domain:
+              - alarm_control_panel
+              - automation
+              - binary_sensor
+              - climate
+              - cover
+              - device_tracker
+              - fan
+              - humidifier
+              - input_boolean
+              - light
+              - lock
+              - media_player
+              - person
+              - schedule
+              - script
+              - sensor
+              - siren
+              - switch
+              - timer
+              - update
+              - valve
+              reorder: false
+        off_state4:
+          name: Off behavior for button 5
+          description: Led state when target is off, closed, disarmed or locked
+          default: '99'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_color4:
+          name: Off color for button 5
+          description: Color for led when target is off (default white)
+          default: '0'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        off_brightness4:
+          name: Brightness when button 5 entity is off
+          description: LED brightness when entity is off.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_state4:
+          name: On behavior for button 5
+          description: Led state when target is on, opened, armed or unlocked
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_color4:
+          name: On color for button 5
+          description: Color for led when target is on (default white)
+          default: '2'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        on_brightness4:
+          name: Brightness when button 5 entity is on
+          description: LED brightness when entity is on.
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_state4:
+          name: Unavailable State for button 5
+          description: Led state when target is unavailable
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Always off
+                value: '2'
+              - label: Always on
+                value: '3'
+              - label: On during daytime
+                value: '99'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_color4:
+          name: Unavailable Color for button 5
+          description: Color for led when target is unavailable (default red)
+          default: '3'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: White
+                value: '0'
+              - label: Blue
+                value: '1'
+              - label: Green
+                value: '2'
+              - label: Red
+                value: '3'
+              - label: Magenta
+                value: '4'
+              - label: Yellow
+                value: '5'
+              - label: Cyan
+                value: '6'
+              sort: false
+              custom_value: false
+              multiple: false
+        unavail_brightness4:
+          name: Unavailable brightness for button 5
+          description: LED brightness when entity is unavailable
+          default: '1'
+          selector:
+            select:
+              mode: dropdown
+              options:
+              - label: Low
+                value: '2'
+              - label: Medium
+                value: '1'
+              - label: Bright
+                value: '0'
+              sort: false
+              custom_value: false
+              multiple: false
+    button5_multipress:
+      name: Button 5 Multipress - Bottom right button
+      collapsed: true
+      input:
+        scene_4h:
+          name: Scene 4 - Held
+          description: Action to run when button is held.
+          default: []
+          selector:
+            action: {}
+        scene_4r:
+          name: Scene 4 - Released
+          description: Action to run when button is released.
+          default: []
+          selector:
+            action: {}
+        scene_42:
+          name: Scene 4 - Pressed 2x
+          description: Action to run when button is pressed twice.
+          default: []
+          selector:
+            action: {}
+        scene_43:
+          name: Scene 4 - Pressed 3x
+          description: Action to run when button is pressed three times.
+          default: []
+          selector:
+            action: {}
+        scene_44:
+          name: Scene 4 - Pressed 4x
+          description: Action to run when button is pressed four times.
+          default: []
+          selector:
+            action: {}
+        scene_45:
+          name: Scene 4 - Pressed 5x
+          description: Action to run when button is pressed five times.
+          default: []
+          selector:
+            action: {}
+    3way_switch:
+      name: 3 Way switch scene control - Requires 3 way to be set to momentary - Requires
+        800 series or firmware 10.40+ on 700 series
+      collapsed: true
+      input:
+        scene_6:
+          name: Scene 6 - Pressed Once
+          description: Action to run when 3 way switch is pressed once.
+          default: []
+          selector:
+            action: {}
+        scene_6h:
+          name: Scene 6 - Held
+          description: Action to run when 3 way switch button is held.
+          default: []
+          selector:
+            action: {}
+        scene_6r:
+          name: Scene 6 - Released
+          description: Action to run when 3 way switch is released.
+          default: []
+          selector:
+            action: {}
+        scene_62:
+          name: Scene 6 - Pressed 2x
+          description: Action to run when 3 way switch is pressed twice.
+          default: []
+          selector:
+            action: {}
+        scene_63:
+          name: Scene 6 - Pressed 3x
+          description: Action to run when 3 way switch is pressed three times.
+          default: []
+          selector:
+            action: {}
+        scene_64:
+          name: Scene 6 - Pressed 4x
+          description: Action to run when 3 way switch is pressed four times.
+          default: []
+          selector:
+            action: {}
+        scene_65:
+          name: Scene 6 - Pressed 5x
+          description: Action to run when 3 way switch is pressed five times.
+          default: []
+          selector:
+            action: {}
+mode: parallel
+max: 10
+variables:
+  controller_id: !input zooz_switch
+  input_p19: !input p19_relay_control
+  input_p20: !input p20_relay_led_report
+  toggle_offset: 1
+  color_offset: 6
+  brightness_offset: 11
+  night_led_brightness: !input night_led_brightness
+  night_led_color: !input night_led_color
+  night_entity: !input night_entity
+  invert_night_entity: !input invert_night_entity
+  on_states:
+  - 'on'
+  - open
+  - opening
+  - 'true'
+  - 'True'
+  - true
+  - true
+  - playing
+  - heat
+  - cold
+  - dry
+  - armed_home
+  - armed_away
+  - armed_vacation
+  - armed_night
+  - armed_custom_bypass
+  - triggered
+  - pending
+  - arming
+  - unlocked
+  - 1
+  - home
+  - active
+  off_states:
+  - 'off'
+  - closed
+  - closing
+  - 'false'
+  - 'False'
+  - false
+  - false
+  - standby
+  - paused
+  - idle
+  - disarmed
+  - disarming
+  - locked
+  - not_home
+  - away
+  night_states:
+  - 'on'
+  - below_horizon
+  - 'True'
+  - 'true'
+  - night
+  - Night
+  valid_buttons: '{{ inputs | rejectattr(''trigger_entity'', ''eq'', []) | rejectattr(''track_relay'',
+    ''in'', [''0'', ''1'']) | list }}'
+  turn_off_untracked: !input turn_off_untracked
+  untracked_buttons: '{{ inputs | selectattr(''trigger_entity'', ''eq'', []) | rejectattr(''track_relay'',
+    ''in'', [''0'', ''1'']) | list }}'
+  in_nighttime: "{% if night_entity != [] and night_entity != '' %}\n  {% set is_night
+    = states(night_entity) in night_states %}\n  {{ not is_night if invert_night_entity
+    else is_night }}\n{% else %}\n  {% set time_now = (now() + timedelta(seconds=2)).strftime('%H:%M:%S')
+    %}\n  {% if schedule_start < schedule_stop %}\n    {{ schedule_set and (schedule_start
+    <= time_now < schedule_stop) }}\n  {% else %}\n    {{ schedule_set and (schedule_start
+    <= time_now or time_now < schedule_stop) }}\n  {% endif %}\n{% endif %}\n"
+trigger_variables:
+  schedule_start: !input schedule_start
+  schedule_stop: !input schedule_stop
+  night_entity: !input night_entity
+  schedule_set: '{{ night_entity != [] or schedule_start != schedule_stop }}'
+  inputs:
+  - button_id: 0
+    track_relay: !input track_relay0
+    off_state: !input off_state0
+    off_color: !input off_color0
+    off_brightness: !input off_brightness0
+    on_state: !input on_state0
+    on_color: !input on_color0
+    on_brightness: !input on_brightness0
+    unavail_state: !input unavail_state0
+    unavail_color: !input unavail_color0
+    unavail_brightness: !input unavail_brightness0
+    trigger_entity: !input input_entity0
+  - button_id: 1
+    off_state: !input off_state1
+    off_color: !input off_color1
+    off_brightness: !input off_brightness1
+    on_state: !input on_state1
+    on_color: !input on_color1
+    on_brightness: !input on_brightness1
+    unavail_state: !input unavail_state1
+    unavail_color: !input unavail_color1
+    unavail_brightness: !input unavail_brightness1
+    trigger_entity: !input input_entity1
+  - button_id: 2
+    off_state: !input off_state2
+    off_color: !input off_color2
+    off_brightness: !input off_brightness2
+    on_state: !input on_state2
+    on_color: !input on_color2
+    on_brightness: !input on_brightness2
+    unavail_state: !input unavail_state2
+    unavail_color: !input unavail_color2
+    unavail_brightness: !input unavail_brightness2
+    trigger_entity: !input input_entity2
+  - button_id: 3
+    off_state: !input off_state3
+    off_color: !input off_color3
+    off_brightness: !input off_brightness3
+    on_state: !input on_state3
+    on_color: !input on_color3
+    on_brightness: !input on_brightness3
+    unavail_state: !input unavail_state3
+    unavail_color: !input unavail_color3
+    unavail_brightness: !input unavail_brightness3
+    trigger_entity: !input input_entity3
+  - button_id: 4
+    off_state: !input off_state4
+    off_color: !input off_color4
+    off_brightness: !input off_brightness4
+    on_state: !input on_state4
+    on_color: !input on_color4
+    on_brightness: !input on_brightness4
+    unavail_state: !input unavail_state4
+    unavail_color: !input unavail_color4
+    unavail_brightness: !input unavail_brightness4
+    trigger_entity: !input input_entity4
+trigger:
+- alias: ButtonPress
+  id: ButtonPress
+  platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_switch
+- alias: EntityToggle
+  id: EntityToggle
+  platform: state
+  entity_id: !input night_entity
+  enabled: '{{ night_entity != [] }}'
+- alias: NightTime
+  id: NightTime
+  platform: time
+  at: !input schedule_start
+  enabled: '{{ night_entity == [] and schedule_set }}'
+- alias: DayTime
+  id: DayTime
+  platform: time
+  at: !input schedule_stop
+  enabled: '{{ night_entity == [] and schedule_set }}'
+- alias: HassStart
+  id: HassStart
+  platform: homeassistant
+  event: start
+- platform: state
+  not_to:
+  entity_id: !input input_entity0
+  enabled: '{{ inputs[0].trigger_entity != [] }}'
+  id: StateTrigger
+  alias: '0'
+- platform: state
+  not_to:
+  entity_id: !input input_entity1
+  enabled: '{{ inputs[1].trigger_entity != [] }}'
+  id: StateTrigger
+  alias: '1'
+- platform: state
+  not_to:
+  entity_id: !input input_entity2
+  enabled: '{{ inputs[2].trigger_entity != [] }}'
+  id: StateTrigger
+  alias: '2'
+- platform: state
+  not_to:
+  entity_id: !input input_entity3
+  enabled: '{{ inputs[3].trigger_entity != [] }}'
+  id: StateTrigger
+  alias: '3'
+- platform: state
+  not_to:
+  entity_id: !input input_entity4
+  enabled: '{{ inputs[4].trigger_entity != [] }}'
+  id: StateTrigger
+  alias: '4'
+- platform: event
+  event_type: automation_reloaded
+  id: AutomationUpdate
+  alias: AutomationUpdate
+action:
+  choose:
+  - conditions: '{{ trigger.alias == ''ButtonPress'' }}'
+    alias: ButtonPressAction
+    sequence:
+    - variables:
+        input_raw_value: '{{ trigger.event.data.value }}'
+        value_to_name:
+          0: KeyPressed
+          1: KeyHeldDown
+          2: KeyReleased
+          3: KeyPressed2x
+          4: KeyPressed3x
+          5: KeyPressed4x
+          6: KeyPressed5x
+        value: "{% if input_raw_value in value_to_name %}\n  {{ value_to_name[input_raw_value|int]
+          }}\n{% else %}\n  {{ trigger.event.data.value }}\n{% endif %}\n"
+        property_key_name: '{{ trigger.event.data.property_key_name }}'
+        label: '{{ trigger.event.data.label }}'
+        command_class_name: '{{ trigger.event.data.command_class_name }}'
+    - service: logbook.log
+      data:
+        name: Z-Wave JS
+        message: 'received event: {{ command_class_name }} - {{ value }} - {{ label
+          }}'
+    - choose:
+      - conditions: '{{ property_key_name == ''001'' and value == ''KeyPressed'' }}'
+        sequence: !input scene_1
+      - conditions: '{{ property_key_name == ''001'' and value == ''KeyHeldDown''
+          }}'
+        sequence: !input scene_1h
+      - conditions: '{{ property_key_name == ''001'' and value == ''KeyReleased''
+          }}'
+        sequence: !input scene_1r
+      - conditions: '{{ property_key_name == ''001'' and value == ''KeyPressed2x''
+          }}'
+        sequence: !input scene_12
+      - conditions: '{{ property_key_name == ''001'' and value == ''KeyPressed3x''
+          }}'
+        sequence: !input scene_13
+      - conditions: '{{ property_key_name == ''001'' and value == ''KeyPressed4x''
+          }}'
+        sequence: !input scene_14
+      - conditions: '{{ property_key_name == ''001'' and value == ''KeyPressed5x''
+          }}'
+        sequence: !input scene_15
+      - conditions: '{{ property_key_name == ''002'' and value == ''KeyPressed'' }}'
+        sequence: !input scene_2
+      - conditions: '{{ property_key_name == ''002'' and value == ''KeyHeldDown''
+          }}'
+        sequence: !input scene_2h
+      - conditions: '{{ property_key_name == ''002'' and value == ''KeyReleased''
+          }}'
+        sequence: !input scene_2r
+      - conditions: '{{ property_key_name == ''002'' and value == ''KeyPressed2x''
+          }}'
+        sequence: !input scene_22
+      - conditions: '{{ property_key_name == ''002'' and value == ''KeyPressed3x''
+          }}'
+        sequence: !input scene_23
+      - conditions: '{{ property_key_name == ''002'' and value == ''KeyPressed4x''
+          }}'
+        sequence: !input scene_24
+      - conditions: '{{ property_key_name == ''002'' and value == ''KeyPressed5x''
+          }}'
+        sequence: !input scene_25
+      - conditions: '{{ property_key_name == ''003'' and value == ''KeyPressed'' }}'
+        sequence: !input scene_3
+      - conditions: '{{ property_key_name == ''003'' and value == ''KeyHeldDown''
+          }}'
+        sequence: !input scene_3h
+      - conditions: '{{ property_key_name == ''003'' and value == ''KeyReleased''
+          }}'
+        sequence: !input scene_3r
+      - conditions: '{{ property_key_name == ''003'' and value == ''KeyPressed2x''
+          }}'
+        sequence: !input scene_32
+      - conditions: '{{ property_key_name == ''003'' and value == ''KeyPressed3x''
+          }}'
+        sequence: !input scene_33
+      - conditions: '{{ property_key_name == ''003'' and value == ''KeyPressed4x''
+          }}'
+        sequence: !input scene_34
+      - conditions: '{{ property_key_name == ''003'' and value == ''KeyPressed5x''
+          }}'
+        sequence: !input scene_35
+      - conditions: '{{ property_key_name == ''004'' and value == ''KeyPressed'' }}'
+        sequence: !input scene_4
+      - conditions: '{{ property_key_name == ''004'' and value == ''KeyHeldDown''
+          }}'
+        sequence: !input scene_4h
+      - conditions: '{{ property_key_name == ''004'' and value == ''KeyReleased''
+          }}'
+        sequence: !input scene_4r
+      - conditions: '{{ property_key_name == ''004'' and value == ''KeyPressed2x''
+          }}'
+        sequence: !input scene_42
+      - conditions: '{{ property_key_name == ''004'' and value == ''KeyPressed3x''
+          }}'
+        sequence: !input scene_43
+      - conditions: '{{ property_key_name == ''004'' and value == ''KeyPressed4x''
+          }}'
+        sequence: !input scene_44
+      - conditions: '{{ property_key_name == ''004'' and value == ''KeyPressed5x''
+          }}'
+        sequence: !input scene_45
+      - conditions: '{{ property_key_name == ''005'' and value == ''KeyPressed'' }}'
+        sequence: !input scene_5
+      - conditions: '{{ property_key_name == ''005'' and value == ''KeyHeldDown''
+          }}'
+        sequence: !input scene_5h
+      - conditions: '{{ property_key_name == ''005'' and value == ''KeyReleased''
+          }}'
+        sequence: !input scene_5r
+      - conditions: '{{ property_key_name == ''005'' and value == ''KeyPressed2x''
+          }}'
+        sequence: !input scene_52
+      - conditions: '{{ property_key_name == ''005'' and value == ''KeyPressed3x''
+          }}'
+        sequence: !input scene_53
+      - conditions: '{{ property_key_name == ''005'' and value == ''KeyPressed4x''
+          }}'
+        sequence: !input scene_54
+      - conditions: '{{ property_key_name == ''005'' and value == ''KeyPressed5x''
+          }}'
+        sequence: !input scene_55
+      - conditions: '{{ property_key_name == ''006'' and value == ''KeyPressed'' }}'
+        sequence: !input scene_6
+      - conditions: '{{ property_key_name == ''006'' and value == ''KeyHeldDown''
+          }}'
+        sequence: !input scene_6h
+      - conditions: '{{ property_key_name == ''006'' and value == ''KeyReleased''
+          }}'
+        sequence: !input scene_6r
+      - conditions: '{{ property_key_name == ''006'' and value == ''KeyPressed2x''
+          }}'
+        sequence: !input scene_62
+      - conditions: '{{ property_key_name == ''006'' and value == ''KeyPressed3x''
+          }}'
+        sequence: !input scene_63
+      - conditions: '{{ property_key_name == ''006'' and value == ''KeyPressed4x''
+          }}'
+        sequence: !input scene_64
+      - conditions: '{{ property_key_name == ''006'' and value == ''KeyPressed5x''
+          }}'
+        sequence: !input scene_65
+  - conditions: '{{ trigger.id == ''StateTrigger'' }}'
+    alias: SingleButtonStateUpdate
+    sequence:
+    - variables:
+        current: '{{ inputs[trigger.alias | int] }}'
+        target_state: '{{ trigger.to_state.state }}'
+    - variables: &id001
+        condition: "{% if target_state in off_states %}\n  {{ dict(state=current.off_state,
+          color=current.off_color, brightness=current.off_brightness) }}\n{% elif
+          target_state in on_states %}\n  {{ dict(state=current.on_state, color=current.on_color,
+          brightness=current.on_brightness) }}\n{% elif target_state == \"unavailable\"
+          %}\n  {{ dict(state=current.unavail_state, color=current.unavail_color,
+          brightness=current.unavail_brightness) }}\n{% else %}\n  {{ dict(state=None,
+          color=None, brightness=None) }}\n{% endif %}\n"
+        parameter:
+          toggle: '{{ current.button_id | int + toggle_offset | int }}'
+          color: '{{ current.button_id | int + color_offset | int }}'
+          brightness: '{{ current.button_id | int + brightness_offset | int }}'
+    - if:
+      - condition: template
+        value_template: '{{ condition.state != ''None'' }}'
+      then:
+        sequence: &id002
+        - parallel:
+          - service: zwave_js.set_config_parameter
+            data:
+              parameter: '{{ parameter.toggle | int }}'
+              value: >
+                {% if condition.state == '99' %}
+                  {{ (2 if schedule_set and in_nighttime else 3) | int }}
+                {% else %}
+                  {{ condition.state | int }}
+                {% endif %}
+            target:
+              device_id: '{{ controller_id }}'
+          - service: zwave_js.set_config_parameter
+            data:
+              parameter: '{{ parameter.color | int }}'
+              value: >
+                {% if night_led_color != '99' and in_nighttime and schedule_set %}
+                  {{ night_led_color | int }}
+                {% else %}
+                  {{ condition.color | int }}
+                {% endif %}
+            target:
+              device_id: '{{ controller_id }}'
+          - service: zwave_js.set_config_parameter
+            data:
+              parameter: '{{ parameter.brightness | int }}'
+              value: >
+                {% if night_led_brightness != '99' and in_nighttime and schedule_set %}
+                  {{ night_led_brightness | int }}
+                {% else %}
+                  {{ condition.brightness | int }}
+                {% endif %}
+            target:
+              device_id: '{{ controller_id }}'
+  - conditions: "{{ \n  (trigger.id in ['NightTime', 'DayTime'] and schedule_set)
+      or \n  (trigger.id == 'HassStart') or \n  (trigger.id == 'EntityToggle' and
+      schedule_set) \n}}\n"
+    alias: UniversalRefreshAction
+    sequence:
+    - if:
+      - condition: template
+        value_template: '{{ trigger.id == ''HassStart'' }}'
+      then:
+      - delay: 00:01:00
+    - if:
+      - condition: template
+        value_template: '{{ turn_off_untracked and untracked_buttons | length > 0
+          }}'
+      then: &id003
+      - repeat:
+          for_each: '{{ untracked_buttons }}'
+          sequence:
+          - service: zwave_js.set_config_parameter
+            data:
+              parameter: '{{ repeat.item.button_id | int + toggle_offset | int }}'
+              value: 2
+            target:
+              device_id: '{{ controller_id }}'
+    - repeat: &id004
+        for_each: '{{ valid_buttons }}'
+        sequence:
+        - variables:
+            current: '{{ repeat.item }}'
+            target_state: '{{ states(repeat.item.trigger_entity) }}'
+        - variables: *id001
+        - if:
+          - condition: template
+            value_template: '{{ condition.state != ''None'' }}'
+          then:
+            sequence: *id002
+  - conditions: '{{ trigger.id == ''AutomationUpdate'' }}'
+    alias: AutomationUpdateAction
+    sequence:
+    - if:
+      - condition: template
+        value_template: '{{ inputs[0].track_relay != ''99'' }}'
+      then:
+      - service: zwave_js.set_config_parameter
+        data:
+          parameter: 1
+          value: '{{ inputs[0].track_relay | int }}'
+        target:
+          device_id: '{{ controller_id }}'
+    - service: zwave_js.set_config_parameter
+      data:
+        parameter: 19
+        value: '{{ input_p19 | int }}'
+      target:
+        device_id: '{{ controller_id }}'
+    - service: zwave_js.set_config_parameter
+      data:
+        parameter: 20
+        value: '{{ input_p20 | int }}'
+      target:
+        device_id: '{{ controller_id }}'
+    - if:
+      - condition: template
+        value_template: '{{ turn_off_untracked and untracked_buttons | length > 0
+          }}'
+      then: *id003
+    - repeat: *id004
