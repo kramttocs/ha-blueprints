@@ -1866,7 +1866,10 @@ action:
           brightness: '{{ current.button_id | int + brightness_offset | int }}'
     - if:
       - condition: template
-        value_template: '{{ condition.state != ''None'' }}'
+        value_template: >
+          {{ condition.state not in [none, 'None', 'none', '']
+             and condition.color not in [none, 'None', 'none', '']
+             and condition.brightness not in [none, 'None', 'none', ''] }}
       then:
         sequence: &id002
         - parallel:
@@ -1877,7 +1880,7 @@ action:
                 {% if condition.state == '99' %}
                   {{ (2 if schedule_set and in_nighttime else 3) | int }}
                 {% else %}
-                  {{ condition.state | int }}
+                  {{ condition.state | int(2) }}
                 {% endif %}
             target:
               device_id: '{{ controller_id }}'
@@ -1888,7 +1891,7 @@ action:
                 {% if night_led_color != '99' and in_nighttime and schedule_set %}
                   {{ night_led_color | int }}
                 {% else %}
-                  {{ condition.color | int }}
+                  {{ condition.color | int(0) }}
                 {% endif %}
             target:
               device_id: '{{ controller_id }}'
@@ -1899,7 +1902,7 @@ action:
                 {% if night_led_brightness != '99' and in_nighttime and schedule_set %}
                   {{ night_led_brightness | int }}
                 {% else %}
-                  {{ condition.brightness | int }}
+                  {{ condition.brightness | int(1) }}
                 {% endif %}
             target:
               device_id: '{{ controller_id }}'
@@ -1936,7 +1939,10 @@ action:
         - variables: *id001
         - if:
           - condition: template
-            value_template: '{{ condition.state != ''None'' }}'
+            value_template: >
+              {{ condition.state not in [none, 'None', 'none', '']
+                 and condition.color not in [none, 'None', 'none', '']
+                 and condition.brightness not in [none, 'None', 'none', ''] }}
           then:
             sequence: *id002
   - conditions: '{{ trigger.id == ''AutomationUpdate'' }}'
@@ -1949,19 +1955,19 @@ action:
       - service: zwave_js.set_config_parameter
         data:
           parameter: 1
-          value: '{{ inputs[0].track_relay | int }}'
+          value: '{{ inputs[0].track_relay | int(99) }}'
         target:
           device_id: '{{ controller_id }}'
     - service: zwave_js.set_config_parameter
       data:
         parameter: 19
-        value: '{{ input_p19 | int }}'
+        value: '{{ input_p19 | int(1) }}'
       target:
         device_id: '{{ controller_id }}'
     - service: zwave_js.set_config_parameter
       data:
         parameter: 20
-        value: '{{ input_p20 | int }}'
+        value: '{{ input_p20 | int(1) }}'
       target:
         device_id: '{{ controller_id }}'
     - if:
