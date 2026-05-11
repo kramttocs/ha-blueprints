@@ -140,6 +140,9 @@ Click the button below to import the blueprint into Home Assistant.
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-motion-event-notifications.yaml)
 
+
+For Telegram Notifications:
+[![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-motion-event-notifications-telegram.yaml)
 ---
 
 ### Features
