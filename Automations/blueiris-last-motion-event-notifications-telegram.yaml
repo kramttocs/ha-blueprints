@@ -1,0 +1,470 @@
+blueprint:
+  name: Blue Iris - Last Motion Event Notifications - Telegram
+  description: >-
+    Sends Telegram notifications for Blue Iris last motion event sensors using a
+    single automation.
+
+    Features:
+    - Supports multiple Blue Iris *_last_motion_event sensors
+    - Automatically derives the matching camera entity
+    - Includes the camera name in the notification
+    - Only sends alerts when the selected alarm panel is armed
+    - Lets you choose which motion event types should notify
+    - Lets you suppress specific cameras for specific alarm states
+    - Sends a Telegram photo alert when a stored snapshot is available
+    - Falls back to a Telegram text message when no stored snapshot is available
+    - Includes Telegram inline buttons for Open Camera and Mute
+    - Supports a configurable mute helper and mute duration
+
+    Naming assumptions:
+    - Sensor entity: sensor.<camera_object_id>_last_motion_event
+    - Camera entity: camera.<camera_object_id>
+
+    Notes:
+    - This blueprint is Telegram-specific.
+    - The Open Camera button currently uses a manually entered URL.
+    - The Mute button uses the fixed Telegram callback:
+      /mute_blueiris_last_motion_event
+
+  domain: automation
+  source_url: https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-motion-event-notifications-telegram.yaml
+
+  input:
+    camera_section:
+      name: Cameras and Motion Events
+      icon: mdi:cctv
+      collapsed: false
+      input:
+        last_motion_event_sensors:
+          name: Last Motion Event Sensors
+          description: >-
+            Select one or more Blue Iris last motion event sensors. These are
+            typically named like sensor.<camera_name>_last_motion_event.
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - sensor
+              reorder: false
+
+        allowed_events:
+          name: Allowed Motion Event Types
+          description: Only these motion event types will generate notifications.
+          default:
+            - motion_person
+            - motion_vehicle
+            - motion_animal
+          selector:
+            select:
+              multiple: true
+              custom_value: true
+              options:
+                - label: Person
+                  value: motion_person
+                - label: Vehicle
+                  value: motion_vehicle
+                - label: Animal
+                  value: motion_animal
+                - label: Multi
+                  value: motion_multi
+                - label: Motion
+                  value: motion
+              sort: false
+
+    alarm_section:
+      name: Alarm Behavior
+      icon: mdi:shield-home
+      collapsed: false
+      input:
+        alarm_entity:
+          name: Alarm Entity
+          description: Notifications only send when this alarm is armed.
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - alarm_control_panel
+              reorder: false
+              multiple: false
+
+        ignore_when_armed_home:
+          name: Ignore Cameras when Armed Home
+          description: Cameras to ignore while alarm is armed_home.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_when_armed_away:
+          name: Ignore Cameras when Armed Away
+          description: Cameras to ignore while alarm is armed_away.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_when_armed_night:
+          name: Ignore Cameras when Armed Night
+          description: Cameras to ignore while alarm is armed_night.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_when_armed_vacation:
+          name: Ignore Cameras when Armed Vacation
+          description: Cameras to ignore while alarm is armed_vacation.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+    notification_section:
+      name: Telegram Notification Settings
+      icon: mdi:telegram
+      collapsed: false
+      input:
+        telegram_notify_entity:
+          name: Telegram Notify Entity
+          description: >-
+            Telegram notify entity to send to. Example:
+            notify.themarkhouse_family
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - notify
+              reorder: false
+              multiple: false
+
+        open_camera_url:
+          name: Open Camera URL
+          description: >-
+            URL used by the Telegram Open Camera button.
+            Use a dummy URL for now and replace it later with the final UI3 link.
+          default: https://example.com/ui3
+          selector:
+            text:
+              multiple: false
+              multiline: false
+
+    mute_section:
+      name: Notification Mute
+      icon: mdi:bell-off
+      collapsed: true
+      input:
+        notification_mute_helper:
+          name: Notification Mute Helper
+          description: >-
+            Input boolean used to suppress notifications while muted.
+            This is also used by the Mute button in Telegram.
+          selector:
+            entity:
+              filter:
+                - domain:
+                    - input_boolean
+              reorder: false
+              multiple: false
+
+        notification_mute_duration:
+          name: Notification Mute Duration
+          description: >-
+            Duration shown on the Mute button. You still need a companion
+            automation that listens for the fixed Telegram callback
+            /mute_blueiris_last_motion_event and turns this helper on for the
+            desired duration.
+          default:
+            hours: 4
+            minutes: 0
+            seconds: 0
+          selector:
+            duration:
+              enable_second: true
+
+    event_suppression_section:
+      name: Per-Motion-Event Camera Suppression
+      icon: mdi:filter-remove
+      collapsed: true
+      input:
+        ignore_cameras_for_person:
+          name: Ignore Cameras for Motion Person
+          description: Cameras to ignore for motion_person events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_cameras_for_vehicle:
+          name: Ignore Cameras for Motion Vehicle
+          description: Cameras to ignore for motion_vehicle events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_cameras_for_animal:
+          name: Ignore Cameras for Motion Animal
+          description: Cameras to ignore for motion_animal events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_cameras_for_multi:
+          name: Ignore Cameras for Motion Multi
+          description: Cameras to ignore for motion_multi events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+        ignore_cameras_for_motion:
+          name: Ignore Cameras for Motion
+          description: Cameras to ignore for motion events.
+          default: []
+          selector:
+            entity:
+              multiple: true
+              filter:
+                - integration: blueiris
+                  domain:
+                    - camera
+              reorder: false
+
+    advanced_section:
+      name: Advanced Settings
+      icon: mdi:cog
+      collapsed: true
+      input:
+        ignored_states:
+          name: Ignored Sensor States
+          description: >-
+            Sensor states that should never generate notifications. You
+            normally do not need to change this.
+          default:
+            - unknown
+            - unavailable
+            - none
+            - idle
+            - no event
+          selector:
+            object:
+              multiple: false
+
+mode: queued
+max: 25
+
+triggers:
+  - trigger: state
+    entity_id: !input last_motion_event_sensors
+
+actions:
+  - variables:
+      allowed_events: !input allowed_events
+      ignored_states_input: !input ignored_states
+      telegram_notify_entity: !input telegram_notify_entity
+      open_camera_url: !input open_camera_url
+      notification_mute_duration: !input notification_mute_duration
+
+      ignore_when_armed_home: !input ignore_when_armed_home
+      ignore_when_armed_away: !input ignore_when_armed_away
+      ignore_when_armed_night: !input ignore_when_armed_night
+      ignore_when_armed_vacation: !input ignore_when_armed_vacation
+
+      ignore_cameras_for_motion: !input ignore_cameras_for_motion
+      ignore_cameras_for_person: !input ignore_cameras_for_person
+      ignore_cameras_for_vehicle: !input ignore_cameras_for_vehicle
+      ignore_cameras_for_animal: !input ignore_cameras_for_animal
+      ignore_cameras_for_multi: !input ignore_cameras_for_multi
+
+      alarm_entity: !input alarm_entity
+      alarm_state: "{{ states(alarm_entity) }}"
+
+      triggered_sensor: "{{ trigger.entity_id }}"
+      sensor_object_id: "{{ triggered_sensor.split('.')[1] }}"
+      camera_object_id: "{{ sensor_object_id | replace('_last_motion_event', '') }}"
+      camera_entity: "camera.{{ camera_object_id }}"
+
+      event_text: "{{ trigger.to_state.state | trim }}"
+      event_type: >
+        {{ (trigger.to_state.attributes.get('event_type')
+           or trigger.to_state.state)
+           | lower
+           | trim }}
+
+      camera_name: >
+        {{ state_attr(camera_entity, 'friendly_name')
+           or trigger.to_state.name | replace(' Last Motion Event', '') }}
+
+      stored_path: "{{ trigger.to_state.attributes.get('stored_path') or '' }}"
+
+      mute_action_id: "/mute_blueiris_last_motion_event"
+
+      mute_action_title: >
+        {% set days = notification_mute_duration.days | default(0) | int %}
+        {% set hours = notification_mute_duration.hours | default(0) | int %}
+        {% set minutes = notification_mute_duration.minutes | default(0) | int %}
+        {% set seconds = notification_mute_duration.seconds | default(0) | int %}
+        {% if days > 0 %}
+          Mute {{ days }}d
+        {% elif hours > 0 %}
+          Mute {{ hours }}h
+        {% elif minutes > 0 %}
+          Mute {{ minutes }}m
+        {% else %}
+          Mute {{ seconds }}s
+        {% endif %}
+
+      title_text: >
+        {% if alarm_state == 'armed_away' %}
+          🚨 {{ camera_name }}
+        {% elif alarm_state == 'armed_home' %}
+          🏠 {{ camera_name }}
+        {% elif alarm_state == 'armed_night' %}
+          🌙 {{ camera_name }}
+        {% elif alarm_state == 'armed_vacation' %}
+          🌴 {{ camera_name }}
+        {% else %}
+          Blue Iris: {{ camera_name }}
+        {% endif %}
+
+      body_text: >-
+        {{ event_text }}{% if alarm_state == 'armed_away' %} while Armed Away{% elif alarm_state == 'armed_home' %} while Armed Home{% elif alarm_state == 'armed_night' %} while Armed Night{% elif alarm_state == 'armed_vacation' %} while Armed Vacation{% endif %}
+
+      telegram_caption: >-
+        {{ title_text }}
+        {{ '\n' ~ body_text }}
+
+      suppress_for_alarm_state: >
+        {% if alarm_state == 'armed_home' %}
+          {{ camera_entity in ignore_when_armed_home }}
+        {% elif alarm_state == 'armed_away' %}
+          {{ camera_entity in ignore_when_armed_away }}
+        {% elif alarm_state == 'armed_night' %}
+          {{ camera_entity in ignore_when_armed_night }}
+        {% elif alarm_state == 'armed_vacation' %}
+          {{ camera_entity in ignore_when_armed_vacation }}
+        {% else %}
+          false
+        {% endif %}
+
+      suppress_for_event_type: >
+        {% if event_type == 'motion' %}
+          {{ camera_entity in ignore_cameras_for_motion }}
+        {% elif event_type == 'motion_person' %}
+          {{ camera_entity in ignore_cameras_for_person }}
+        {% elif event_type == 'motion_vehicle' %}
+          {{ camera_entity in ignore_cameras_for_vehicle }}
+        {% elif event_type == 'motion_animal' %}
+          {{ camera_entity in ignore_cameras_for_animal }}
+        {% elif event_type == 'motion_multi' %}
+          {{ camera_entity in ignore_cameras_for_multi }}
+        {% else %}
+          false
+        {% endif %}
+
+  - condition: template
+    value_template: >
+      {{ trigger.to_state is not none }}
+
+  - condition: template
+    value_template: >
+      {{ trigger.to_state.state | lower | trim not in (ignored_states_input | map('lower') | list) }}
+
+  - condition: template
+    value_template: >
+      {{ trigger.to_state.attributes.get('event_type') is not none }}
+
+  - condition: template
+    value_template: >
+      {{ alarm_state not in ['disarmed', 'unarmed'] }}
+
+  - condition: template
+    value_template: >
+      {{ event_type in (allowed_events | map('lower') | list) }}
+
+  - condition: template
+    value_template: >
+      {{ not (suppress_for_alarm_state | bool) }}
+
+  - condition: template
+    value_template: >
+      {{ not (suppress_for_event_type | bool) }}
+
+  - condition: template
+    value_template: >
+      {{ states(camera_entity) not in ['unknown', 'unavailable'] }}
+
+  - condition: state
+    entity_id: !input notification_mute_helper
+    state: "off"
+
+  - action: blueiris.latest_motion_event_snapshot
+    target:
+      entity_id: "{{ camera_entity }}"
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ stored_path | length > 0 }}"
+        sequence:
+          - action: telegram_bot.send_photo
+            data:
+              entity_id:
+                - !input telegram_notify_entity
+              file: "{{ stored_path }}"
+              caption: "{{ telegram_caption }}"
+              inline_keyboard:
+                - "Open Camera:{{ open_camera_url }}"
+                - "{{ mute_action_title }}:{{ mute_action_id }}"
+    default:
+      - action: telegram_bot.send_message
+        data:
+          entity_id:
+            - !input telegram_notify_entity
+          message: "{{ telegram_caption }}"
+          inline_keyboard:
+            - "Open Camera:{{ open_camera_url }}"
+            - "{{ mute_action_title }}:{{ mute_action_id }}"
