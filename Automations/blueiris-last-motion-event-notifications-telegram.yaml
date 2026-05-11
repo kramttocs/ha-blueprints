@@ -8,9 +8,9 @@ blueprint:
     - Supports multiple Blue Iris *_last_motion_event sensors
     - Automatically derives the matching camera entity
     - Includes the camera name in the notification
-    - Only sends alerts when the selected alarm panel is armed
     - Lets you choose which motion event types should notify
-    - Lets you suppress specific cameras for specific alarm states
+    - Lets you suppress specific cameras for specific motion event types
+    - Optional alarm-state filtering and per-alarm-state camera suppression
     - Sends a Telegram photo alert when a stored snapshot is available
     - Falls back to a Telegram text message when no stored snapshot is available
     - Includes Telegram inline buttons for Open Camera and Mute
@@ -22,7 +22,7 @@ blueprint:
 
     Notes:
     - This blueprint is Telegram-specific.
-    - The Open Camera button currently uses a manually entered URL.
+    - The Open Camera button uses a manually entered UI3 URL.
     - The Mute button uses the fixed Telegram callback:
       /mute_blueiris_last_motion_event
 
@@ -76,11 +76,22 @@ blueprint:
     alarm_section:
       name: Alarm Behavior
       icon: mdi:shield-home
-      collapsed: false
+      collapsed: true
       input:
+        use_alarm_filter:
+          name: Only Notify When Alarm Is Armed
+          description: >-
+            If enabled, notifications only send when the selected alarm entity
+            is armed, and the per-alarm-state camera ignore settings are used.
+            If disabled, alarm state is ignored completely.
+          default: true
+          selector:
+            boolean: {}
+
         alarm_entity:
           name: Alarm Entity
-          description: Notifications only send when this alarm is armed.
+          description: >-
+            Alarm entity used only when alarm filtering is enabled.
           selector:
             entity:
               filter:
@@ -162,8 +173,7 @@ blueprint:
         open_camera_url:
           name: Open Camera URL
           description: >-
-            URL used by the Telegram Open Camera button.
-            Use a dummy URL for now and replace it later with the final UI3 link.
+            Accessible URL to UI3 used by the Telegram Open Camera button.
           default: https://example.com/ui3
           selector:
             text:
@@ -302,6 +312,7 @@ triggers:
 
 actions:
   - variables:
+      use_alarm_filter: !input use_alarm_filter
       allowed_events: !input allowed_events
       ignored_states_input: !input ignored_states
       telegram_notify_entity: !input telegram_notify_entity
@@ -320,7 +331,12 @@ actions:
       ignore_cameras_for_multi: !input ignore_cameras_for_multi
 
       alarm_entity: !input alarm_entity
-      alarm_state: "{{ states(alarm_entity) }}"
+      alarm_state: >
+        {% if use_alarm_filter %}
+          {{ states(alarm_entity) }}
+        {% else %}
+          none
+        {% endif %}
 
       triggered_sensor: "{{ trigger.entity_id }}"
       sensor_object_id: "{{ triggered_sensor.split('.')[1] }}"
@@ -358,27 +374,29 @@ actions:
         {% endif %}
 
       title_text: >
-        {% if alarm_state == 'armed_away' %}
+        {% if use_alarm_filter and alarm_state == 'armed_away' %}
           🚨 {{ camera_name }}
-        {% elif alarm_state == 'armed_home' %}
+        {% elif use_alarm_filter and alarm_state == 'armed_home' %}
           🏠 {{ camera_name }}
-        {% elif alarm_state == 'armed_night' %}
+        {% elif use_alarm_filter and alarm_state == 'armed_night' %}
           🌙 {{ camera_name }}
-        {% elif alarm_state == 'armed_vacation' %}
+        {% elif use_alarm_filter and alarm_state == 'armed_vacation' %}
           🌴 {{ camera_name }}
         {% else %}
           Blue Iris: {{ camera_name }}
         {% endif %}
 
       body_text: >-
-        {{ event_text }}{% if alarm_state == 'armed_away' %} while Armed Away{% elif alarm_state == 'armed_home' %} while Armed Home{% elif alarm_state == 'armed_night' %} while Armed Night{% elif alarm_state == 'armed_vacation' %} while Armed Vacation{% endif %}
+        {{ event_text }}{% if use_alarm_filter and alarm_state == 'armed_away' %} while Armed Away{% elif use_alarm_filter and alarm_state == 'armed_home' %} while Armed Home{% elif use_alarm_filter and alarm_state == 'armed_night' %} while Armed Night{% elif use_alarm_filter and alarm_state == 'armed_vacation' %} while Armed Vacation{% endif %}
 
       telegram_caption: >-
         {{ title_text }}
         {{ '\n' ~ body_text }}
 
       suppress_for_alarm_state: >
-        {% if alarm_state == 'armed_home' %}
+        {% if not use_alarm_filter %}
+          false
+        {% elif alarm_state == 'armed_home' %}
           {{ camera_entity in ignore_when_armed_home }}
         {% elif alarm_state == 'armed_away' %}
           {{ camera_entity in ignore_when_armed_away }}
@@ -419,10 +437,6 @@ actions:
 
   - condition: template
     value_template: >
-      {{ alarm_state not in ['disarmed', 'unarmed'] }}
-
-  - condition: template
-    value_template: >
       {{ event_type in (allowed_events | map('lower') | list) }}
 
   - condition: template
@@ -440,6 +454,10 @@ actions:
   - condition: state
     entity_id: !input notification_mute_helper
     state: "off"
+
+  - condition: template
+    value_template: >
+      {{ (not use_alarm_filter) or (alarm_state not in ['disarmed', 'unarmed']) }}
 
   - action: blueiris.latest_motion_event_snapshot
     target:
