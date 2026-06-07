@@ -140,9 +140,10 @@ Click the button below to import the blueprint into Home Assistant.
 
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-motion-event-notifications.yaml)
 
-
 For Telegram Notifications:
+
 [![Import Blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https://raw.githubusercontent.com/kramttocs/ha-blueprints/main/Automations/blueiris-last-motion-event-notifications-telegram.yaml)
+
 ---
 
 ### Features
@@ -166,11 +167,22 @@ Supported values:
 - `motion_multi`
 - `motion`
 
-#### Alarm-Aware Behavior
+#### Optional Alarm-Aware Behavior
 
-Notifications are only sent when the selected alarm entity is armed.
+The blueprint can optionally use an alarm entity to control when notifications are sent.
 
-Supports camera-specific suppression for:
+When **Only Notify When Alarm Is Armed** is enabled:
+
+- notifications are only sent when the selected alarm entity is armed
+- camera-specific suppression rules for armed states are used
+
+When disabled:
+
+- alarm state is ignored
+- notifications can be sent while the alarm is disarmed
+- per-alarm-state camera suppression is ignored
+
+Supported alarm states for camera-specific suppression:
 
 - `armed_home`
 - `armed_away`
@@ -190,6 +202,7 @@ Supports suppressing specific cameras for specific motion event types:
 - Motion
 
 This makes it possible to do things like:
+
 - ignore animal detections on one camera
 - still allow person detections on that same camera
 - still allow animal detections on other cameras
@@ -259,15 +272,19 @@ Example:
 
 #### Alarm Behavior
 
+- **Only Notify When Alarm Is Armed**  
+  When enabled, notifications are only sent when the selected alarm entity is armed.  
+  When disabled, alarm state is ignored completely.
+
 - **Alarm Entity**  
-  Notifications are only sent when this alarm is armed.
+  Alarm entity used when alarm-state filtering is enabled. This input is still required by the blueprint, but it can be ignored by turning off **Only Notify When Alarm Is Armed**.
 
 - **Ignore Cameras when Armed Home**
 - **Ignore Cameras when Armed Away**
 - **Ignore Cameras when Armed Night**
 - **Ignore Cameras when Armed Vacation**
 
-These let you suppress selected cameras for specific alarm states.
+These let you suppress selected cameras for specific alarm states when alarm filtering is enabled.
 
 #### Notification Settings
 
@@ -317,12 +334,16 @@ Default ignored states:
 
 ### Example Notifications
 
-Examples include:
+When alarm filtering is enabled, examples include:
 
 - `🚨 Driveway` — `Person detected while Armed Away`
 - `🏠 Front Door` — `Person detected while Armed Home`
 - `🌙 Backyard` — `Animal detected while Armed Night`
 - `🌴 Garage` — `Vehicle detected while Armed Vacation`
+
+When alarm filtering is disabled, the notification title falls back to the standard Blue Iris format:
+
+- `Blue Iris: Driveway` — `Person detected`
 
 ---
 
@@ -408,6 +429,7 @@ mode: restart
   - `motion_animal`
   - `motion_multi`
   - `motion`
+- If **Only Notify When Alarm Is Armed** is disabled, the selected alarm entity is ignored and notifications can be sent while the alarm is disarmed.
 - If the last motion event sensor provides a stored snapshot path, the notification includes the image automatically.
 - If no stored snapshot path is available, the notification is still sent without an image.
 - The mute helper and mute duration in the companion automations should match the values selected in the blueprint.
