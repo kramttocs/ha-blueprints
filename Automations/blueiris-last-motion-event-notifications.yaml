@@ -8,7 +8,7 @@ blueprint:
     - Supports multiple Blue Iris *_last_motion_event sensors
     - Automatically derives the matching camera entity
     - Includes the camera name in the notification
-    - Only sends alerts when the selected alarm panel is armed
+    - Optionally sends alerts only when the selected alarm panel is armed
     - Lets you choose which motion event types should notify
     - Lets you suppress specific cameras for specific alarm states
     - Uses the latest Blue Iris snapshot image for the triggered camera
@@ -71,9 +71,22 @@ blueprint:
       icon: mdi:shield-home
       collapsed: false
       input:
+        use_alarm_filter:
+          name: Only Notify When Alarm Is Armed
+          description: >-
+            If enabled, notifications only send when the selected alarm entity is armed,
+            and the per-alarm-state camera ignore settings are used.
+            If disabled, alarm state is ignored completely.
+          default: true
+          selector:
+            boolean: {}
+
         alarm_entity:
           name: Alarm Entity
-          description: Notifications only send when this alarm is armed.
+          description: >-
+            Alarm entity used for alarm-state filtering when enabled.
+            This is still required by the blueprint, but can be ignored by turning
+            off "Only Notify When Alarm Is Armed".
           selector:
             entity:
               filter:
@@ -318,6 +331,7 @@ actions:
       dynamic_camera_dashboard: !input dynamic_camera_dashboard
       notification_mute_duration: !input notification_mute_duration
 
+      use_alarm_filter: !input use_alarm_filter
       ignore_when_armed_home: !input ignore_when_armed_home
       ignore_when_armed_away: !input ignore_when_armed_away
       ignore_when_armed_night: !input ignore_when_armed_night
@@ -330,7 +344,12 @@ actions:
       ignore_cameras_for_multi: !input ignore_cameras_for_multi
 
       alarm_entity: !input alarm_entity
-      alarm_state: "{{ states(alarm_entity) }}"
+      alarm_state: >
+        {% if use_alarm_filter | bool %}
+          {{ states(alarm_entity) }}
+        {% else %}
+          none
+        {% endif %}
 
       triggered_sensor: "{{ trigger.entity_id }}"
       sensor_object_id: "{{ triggered_sensor.split('.')[1] }}"
@@ -423,7 +442,7 @@ actions:
 
   - condition: template
     value_template: >
-      {{ alarm_state not in ['disarmed', 'unarmed'] }}
+      {{ (not (use_alarm_filter | bool)) or alarm_state not in ['disarmed', 'unarmed'] }}
 
   - condition: template
     value_template: >
@@ -431,7 +450,7 @@ actions:
 
   - condition: template
     value_template: >
-      {{ not (suppress_for_alarm_state | bool) }}
+      {{ (not (use_alarm_filter | bool)) or not (suppress_for_alarm_state | bool) }}
 
   - condition: template
     value_template: >
