@@ -430,8 +430,8 @@ mode: restart
   - `motion_multi`
   - `motion`
 - If **Only Notify When Alarm Is Armed** is disabled, the selected alarm entity is ignored and notifications can be sent while the alarm is disarmed.
-- If the last motion event sensor provides a stored snapshot path, the notification includes the image automatically.
-- If no stored snapshot path is available, the notification is still sent without an image.
+- The blueprint calls the Blue Iris latest motion event snapshot service and uses the saved image returned by that service.
+- If the snapshot service does not return a saved image, the notification is still sent without an image.
 - The mute helper and mute duration in the companion automations should match the values selected in the blueprint.
 - The notification service is entered manually so the blueprint remains portable across different Home Assistant installs.
 
