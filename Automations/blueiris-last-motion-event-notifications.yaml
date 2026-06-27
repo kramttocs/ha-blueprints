@@ -11,7 +11,7 @@ blueprint:
     - Optionally sends alerts only when the selected alarm panel is armed
     - Lets you choose which motion event types should notify
     - Lets you suppress specific cameras for specific alarm states
-    - Uses the latest Blue Iris snapshot image for the triggered camera
+    - Uses the latest Blue Iris alert snapshot returned by the integration snapshot service
     - Optional dynamic dashboard navigation per camera
     - Supports a configurable mute helper and mute duration
 
@@ -367,14 +367,6 @@ actions:
         {{ state_attr(camera_entity, 'friendly_name')
            or trigger.to_state.name | replace(' Last Motion Event', '') }}
 
-      image_path: >
-        {% set stored_path = trigger.to_state.attributes.get('stored_path') %}
-        {% if stored_path %}
-          {{ (stored_path | replace('/config/www', '/local')) ~ '?v=' ~ now().timestamp() }}
-        {% else %}
-          {{ '' }}
-        {% endif %}
-
       notify_tag: "blueiris_{{ camera_object_id }}_{{ alarm_state | lower | replace(' ', '_') }}"
       mute_action_id: "MUTE_BLUEIRIS_LAST_MOTION_EVENT"
 
@@ -399,6 +391,22 @@ actions:
         {% else %}
           {{ camera_dashboard_path }}
         {% endif %}
+
+      title_text: >
+        {% if alarm_state == 'armed_away' %}
+          🚨 {{ camera_name }}
+        {% elif alarm_state == 'armed_home' %}
+          🏠 {{ camera_name }}
+        {% elif alarm_state == 'armed_night' %}
+          🌙 {{ camera_name }}
+        {% elif alarm_state == 'armed_vacation' %}
+          🌴 {{ camera_name }}
+        {% else %}
+          Blue Iris: {{ camera_name }}
+        {% endif %}
+
+      body_text: >-
+        {{ event_text }}{% if alarm_state == 'armed_away' %} while Armed Away{% elif alarm_state == 'armed_home' %} while Armed Home{% elif alarm_state == 'armed_night' %} while Armed Night{% elif alarm_state == 'armed_vacation' %} while Armed Vacation{% endif %}
 
       suppress_for_alarm_state: >
         {% if alarm_state == 'armed_home' %}
@@ -467,31 +475,21 @@ actions:
   - action: blueiris.latest_motion_event_snapshot
     target:
       entity_id: "{{ camera_entity }}"
+    response_variable: bi_snapshot
+    continue_on_error: true
 
   - choose:
       - conditions:
           - condition: template
             value_template: >
-              {{ image_path | length > 0 }}
+              {{ bi_snapshot is defined and (bi_snapshot.snapshot_url | default('', true)) | length > 0 }}
         sequence:
           - action: "{{ notify_service }}"
             data:
-              title: >
-                {% if alarm_state == 'armed_away' %}
-                  🚨 {{ camera_name }}
-                {% elif alarm_state == 'armed_home' %}
-                  🏠 {{ camera_name }}
-                {% elif alarm_state == 'armed_night' %}
-                  🌙 {{ camera_name }}
-                {% elif alarm_state == 'armed_vacation' %}
-                  🌴 {{ camera_name }}
-                {% else %}
-                  Blue Iris: {{ camera_name }}
-                {% endif %}
-              message: >-
-                {{ event_text }}{% if alarm_state == 'armed_away' %} while Armed Away{% elif alarm_state == 'armed_home' %} while Armed Home{% elif alarm_state == 'armed_night' %} while Armed Night{% elif alarm_state == 'armed_vacation' %} while Armed Vacation{% endif %}
+              title: "{{ title_text }}"
+              message: "{{ body_text }}"
               data:
-                image: "{{ image_path }}"
+                image: "{{ bi_snapshot.snapshot_url }}?v={{ now().timestamp() }}"
                 tag: "{{ notify_tag }}"
                 url: "{{ resolved_click_action }}"
                 clickAction: "{{ resolved_click_action }}"
@@ -504,20 +502,8 @@ actions:
     default:
       - action: "{{ notify_service }}"
         data:
-          title: >
-            {% if alarm_state == 'armed_away' %}
-              🚨 {{ camera_name }}
-            {% elif alarm_state == 'armed_home' %}
-              🏠 {{ camera_name }}
-            {% elif alarm_state == 'armed_night' %}
-              🌙 {{ camera_name }}
-            {% elif alarm_state == 'armed_vacation' %}
-              🌴 {{ camera_name }}
-            {% else %}
-              Blue Iris: {{ camera_name }}
-            {% endif %}
-          message: >-
-            {{ event_text }}{% if alarm_state == 'armed_away' %} while Armed Away{% elif alarm_state == 'armed_home' %} while Armed Home{% elif alarm_state == 'armed_night' %} while Armed Night{% elif alarm_state == 'armed_vacation' %} while Armed Vacation{% endif %}
+          title: "{{ title_text }}"
+          message: "{{ body_text }}"
           data:
             tag: "{{ notify_tag }}"
             url: "{{ resolved_click_action }}"

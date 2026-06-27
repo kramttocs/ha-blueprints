@@ -11,8 +11,8 @@ blueprint:
     - Lets you choose which motion event types should notify
     - Lets you suppress specific cameras for specific motion event types
     - Optional alarm-state filtering and per-alarm-state camera suppression
-    - Sends a Telegram photo alert when a stored snapshot is available
-    - Falls back to a Telegram text message when no stored snapshot is available
+    - Sends a Telegram photo alert when the snapshot service returns a saved image
+    - Falls back to a Telegram text message when no saved image is available
     - Includes Telegram inline buttons for Open Camera and Mute
     - Supports a configurable mute helper and mute duration
 
@@ -354,8 +354,6 @@ actions:
         {{ state_attr(camera_entity, 'friendly_name')
            or trigger.to_state.name | replace(' Last Motion Event', '') }}
 
-      stored_path: "{{ trigger.to_state.attributes.get('stored_path') or '' }}"
-
       mute_action_id: "/mute_blueiris_last_motion_event"
 
       mute_action_title: >
@@ -462,17 +460,20 @@ actions:
   - action: blueiris.latest_motion_event_snapshot
     target:
       entity_id: "{{ camera_entity }}"
+    response_variable: bi_snapshot
+    continue_on_error: true
 
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ stored_path | length > 0 }}"
+            value_template: >
+              {{ bi_snapshot is defined and (bi_snapshot.saved_path | default('', true)) | length > 0 }}
         sequence:
           - action: telegram_bot.send_photo
             data:
               entity_id:
                 - !input telegram_notify_entity
-              file: "{{ stored_path }}"
+              file: "{{ bi_snapshot.saved_path }}"
               caption: "{{ telegram_caption }}"
               inline_keyboard:
                 - "Open Camera:{{ open_camera_url }}"
