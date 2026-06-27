@@ -321,6 +321,7 @@ max: 25
 triggers:
   - trigger: state
     entity_id: !input last_motion_event_sensors
+    attribute: last_detection
 
 actions:
   - variables:
